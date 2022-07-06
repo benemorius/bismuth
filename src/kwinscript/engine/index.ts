@@ -377,9 +377,9 @@ export class EngineImpl implements Engine {
       return;
     }
 
-    if (!this.controller.currentActivity || !this.controller.currentDesktop) {
-      return;
-    }
+    // if (!this.controller.currentActivity || !this.controller.currentDesktop) {
+    //   return;
+    // }
 
     if (screen) {
       this.arrangeScreen(screen);
@@ -400,19 +400,19 @@ export class EngineImpl implements Engine {
   /**
    * Arrange tiles on one screen
    *
-   * @param screenSurface screen's surface, on which windows should be arranged
+   * @param surface screen's surface, on which windows should be arranged
    */
-  private arrangeScreen(screenSurface: DriverSurface): void {
+  private arrangeScreen(surface: DriverSurface): void {
     this.log.log(
-      `arranging surface: ${screenSurface.screen} group: ${screenSurface.group}`
+      `arrangeScreen(): desktop: ${surface.desktop} surface: ${surface.screen} group: ${surface.group}`
     );
 
-    const layout = this.layouts.getCurrentLayout(screenSurface);
+    const layout = this.layouts.getCurrentLayout(surface);
 
-    const workingArea = screenSurface.workingArea;
+    const workingArea = surface.workingArea;
     const tilingArea = this.getTilingArea(workingArea, layout);
 
-    const visibleWindows = this.windows.visibleWindowsOn(screenSurface);
+    const visibleWindows = this.windows.visibleWindowsOn(surface);
 
     // Set correct window state for new windows
     visibleWindows.forEach((win: EngineWindow) => {
@@ -421,8 +421,7 @@ export class EngineImpl implements Engine {
       }
     });
 
-    const tileableWindows =
-      this.windows.visibleTileableWindowsOn(screenSurface);
+    const tileableWindows = this.windows.visibleTileableWindowsOn(surface);
 
     tileableWindows.forEach((win: EngineWindow) => {
       this.log.log(`tiling group ${win.window.group} ${win}`);
@@ -457,7 +456,7 @@ export class EngineImpl implements Engine {
         });
     }
 
-    this.log.log(["arrangeScreen/finished", { screenSurface }]);
+    this.log.log(`arrangeScreen(): finished ${surface}`);
   }
 
   /**
@@ -465,21 +464,28 @@ export class EngineImpl implements Engine {
    * @param surface Windows on this surface will be committed
    */
   private commitArrangement(surface: DriverSurface): void {
+    this.log.log(
+      `commitArrangement(): desktop: ${surface.desktop} surface: ${surface.screen} group: ${surface.group}`
+    );
+
     // Commit window assigned properties
     const visibleWindows = this.windows.allWindowsOn(surface);
 
     for (const win of visibleWindows) {
       // this.log.log(`committing: ${win}`);
-      if ((win.window as DriverWindowImpl).client.screen != surface.screen) {
-        this.log.log(`correcting window to screen ${surface.screen} ${win}`);
+      // if ((win.window as DriverWindowImpl).client.screen != surface.screen) {
+        // this.log.log(`correcting window to screen ${surface.screen} ${win}`);
+      this.log.log(`setting surface`);
         win.surface = surface;
         // if (win.state == WindowState.NativeMinimized) {
         //   this.log.log(`correcting minimized window ${win}`);
         //   win.geometry = surface.workingArea;
         // }
-      }
+      // }
+      this.log.log(`running commit`);
       win.commit();
     }
+    this.log.log(`commitArrangement(): finished ${surface}`);
   }
 
   public currentLayoutOnCurrentSurface(): WindowsLayout {
@@ -789,7 +795,7 @@ export class EngineImpl implements Engine {
       this.saveWindows();
     } else if (closestSurface) {
       this.log.log(`moving to empty screen ${closestSurface}`);
-      this.controller.moveWindowToSurface(window, closestSurface);
+      this.moveWindowToSurface(window, closestSurface);
     }
   }
 
@@ -939,7 +945,7 @@ export class EngineImpl implements Engine {
       return;
     }
 
-    this.controller.moveWindowToSurface(win, closestScreen);
+    this.moveWindowToSurface(win, closestScreen);
   }
 
   public toggleFloat(window: EngineWindow): void {
@@ -1244,53 +1250,222 @@ export class EngineImpl implements Engine {
       return;
     }
 
-    const oldSurf = this.controller.moveWindowToGroup(groupId, window);
+    // const oldSurf = this.controller.moveWindowToGroup(groupId, window);
 
-    if (oldSurf) {
-      this.arrange(oldSurf);
-    }
-
-    if (!window.window.hidden && window.window.surface) {
-      this.arrange(window.window.surface);
-    }
-  }
-
-  public swapGroupToSurface(groupId: number, screen: number): void {
-    // find if any surface is currently displaying the group
+    // find if any surface was currently displaying the window's old group
+    const oldGroup = window.window.group;
     let oldSurf = null;
     for (const surf of this.controller.screens()) {
-      if (surf.group == groupId) {
+      if (surf.group == oldGroup) {
         oldSurf = surf;
         break;
       }
     }
 
     this.log.log(
-      `swapping group ${groupId} from screen ${oldSurf?.screen} to ${screen}`
+      `moving window from group ${oldGroup} to group ${groupId} ${window}`
     );
 
-    this.controller.swapGroupToSurface(groupId, screen);
-    const surface = this.controller.screens()[screen];
-
-    // tell kwin if any windows need their desktop changed
-    for (const win of this.windows.allWindowsOn(surface)) {
-      // don't set the desktop if it's already set to all desktops
-      if (win.desktop != -1) {
-        win.desktop = surface.desktop;
+    // find if a surface on the current desktop displays this group
+    let newSurf = null;
+    for (const surf of this.controller.screens(
+      this.controller.currentActivity,
+      this.controller.currentDesktop
+    )) {
+      if (surf.group == groupId) {
+        newSurf = surf;
+        break;
       }
     }
 
-    this.log.log(`do arrange for screen ${this.controller.screens()[screen]}`);
+    if (newSurf) {
+      this.log.log(
+        `showing window on desktop ${newSurf.desktop} surface ${newSurf.screen}`
+      );
+      window.surface = newSurf;
+      if (oldSurf) {
+        this.arrange(oldSurf);
+      }
+      this.arrange(newSurf);
+      return;
+    }
 
-    this.arrange(surface);
+    // else, find if a surface on another desktop displays this group
+    for (
+      let desktop = 1;
+      desktop <= this.proxy.workspace().desktops;
+      desktop++
+    ) {
+      for (const surf of this.controller.screens(
+        this.controller.currentActivity,
+        desktop
+      )) {
+        if (surf.group == groupId) {
+          newSurf = surf;
+          break;
+        }
+      }
+      if (newSurf) {
+        break;
+      }
+    }
+
+    if (newSurf) {
+      this.log.log(
+        `showing window on other desktop ${newSurf.desktop} surface ${newSurf.screen}`
+      );
+      window.surface = newSurf;
+    } else {
+      // // else just hide the window as no surface currently displays its group
+      // window.window.group = groupId;
+      // window.window.desktop = this.lastEmptyDesktop(window.screen);
+      // this.log.log(`moving window to empty desktop ${window.window.desktop}`);
+    }
+
+    // if (oldSurf?.desktop == this.controller.currentDesktop) {
+    //   this.arrange(oldSurf);
+    // }
+
+    // if (window.surface?.desktop == this.controller.currentDesktop) {
+    //   this.arrange(window.window.surface);
+    // }
 
     if (oldSurf) {
-      oldSurf = this.controller.screens()[oldSurf.screen];
-      this.log.log(
-        `also do arrange for screen ${oldSurf.screen} group ${oldSurf.group}`
-      );
       this.arrange(oldSurf);
     }
+
+    this.arrange(newSurf);
+  }
+
+  public swapGroupToSurface(groupId: number, screen: number): void {
+    const toSurf = this.controller.screens()[screen];
+    const oldGroup = toSurf.group;
+
+    // find if any surface on the same desktop is currently displaying the group
+    let fromSurf = null;
+    for (const surf of this.controller.screens()) {
+      if (surf.id == toSurf.id) {
+        continue;
+      }
+      if (surf.group == groupId) {
+        fromSurf = surf;
+        break;
+      }
+    }
+
+    // just swap groups between the two surfaces on the same desktop
+    if (fromSurf) {
+      this.log.log(
+        `swapping group ${groupId} from screen ${fromSurf?.screen} to ${screen}`
+      );
+
+      fromSurf.group = toSurf.group;
+      toSurf.group = groupId;
+      this.arrange(fromSurf);
+      this.arrange(toSurf);
+      return;
+    }
+
+    // else, we need to find some surface to display the old group getting swapped out
+
+    // find the last desktop displaying only this group, if any
+    let loneGroupSurf = null;
+    for (
+      let desktop = this.proxy.workspace().desktops;
+      desktop > 0;
+      desktop--
+    ) {
+      for (const surf of this.controller.screens(
+        this.controller.currentActivity,
+        desktop
+      )) {
+        // ignore self
+        if (surf.id == toSurf.id) {
+          continue;
+        }
+        if (
+          // the surface has this group and the desktop has no other groups
+          surf.group == groupId &&
+          !this.windows
+            .allWindows(this.controller.currentActivity, desktop)
+            .filter((win) => win.window.group != groupId).length
+        ) {
+          loneGroupSurf = surf;
+          break;
+        }
+      }
+      if (loneGroupSurf) {
+        break;
+      }
+    }
+
+    if (loneGroupSurf) {
+      this.log.log(
+        `garbage collecting lone group ${groupId} on desktop ${loneGroupSurf.desktop}`
+      );
+    }
+
+    // if (otherGroupSurf) {
+    //   this.log.log(
+    //     `releasing group ${oldGroup} on screen ${toSurf.screen} to desktop ${otherGroupSurf.desktop} screen ${otherGroupSurf.screen}`
+    //   );
+    //   toSurf.group = groupId;
+    //   this.arrange(toSurf);
+    //   this.arrange(otherGroupSurf);
+    //   return;
+    // }
+
+    // else, find the first empty desktop and clone the desktop there
+    const emptyDesktop = this.firstEmptyDesktopAfter(toSurf.desktop);
+    const emptyDesktopSurfs = this.controller.screens(
+      this.controller.currentActivity,
+      emptyDesktop
+    );
+
+    // this.log.log(
+    //   `cloning desktop ${toSurf.desktop} to desktop ${emptyDesktop}`
+    // );
+    // const cloneDesktopSurfs = this.controller.screens(
+    //   undefined,
+    //   toSurf.desktop
+    // );
+    // for (let screen = 0; screen < cloneDesktopSurfs.length; screen++) {
+    //   emptyDesktopSurfs[screen].group = cloneDesktopSurfs[screen].group;
+    // }
+
+    this.log.log(
+      `moving orphaned group ${oldGroup} to empty desktop ${emptyDesktop}`
+    );
+
+    toSurf.group = groupId;
+    this.arrange(emptyDesktopSurfs[toSurf.screen]);
+    this.arrange(toSurf);
+
+
+
+
+
+    // this.controller.swapGroupToSurface(groupId, screen);
+
+    // // tell kwin if any windows need their desktop changed
+    // for (const win of this.windows.allWindowsOn(toSurf)) {
+    //   // don't set the desktop if it's already set to all desktops
+    //   if (win.desktop != -1) {
+    //     win.desktop = toSurf.desktop;
+    //   }
+    // }
+
+    // this.log.log(`do arrange for screen ${this.controller.screens()[screen]}`);
+
+    // this.arrange(toSurf);
+
+    // if (fromSurf) {
+    //   fromSurf = this.controller.screens()[fromSurf.screen];
+    //   this.log.log(
+    //     `also do arrange for screen ${fromSurf.screen} group ${fromSurf.group}`
+    //   );
+    //   this.arrange(fromSurf);
+    // }
   }
 
   public swapGroupToActiveSurface(groupId: number): void {
@@ -1324,8 +1499,8 @@ export class EngineImpl implements Engine {
     );
     this.controller.showNotification(`Move window to screen ${surface.screen}`);
     // window.surface = surface;
-    this.arrangeScreen(surface);
-    this.commitArrangement(surface);
+
+    this.moveWindowToGroup(surface.group, window);
   }
 
   // public swapSurfaceToScreen(surface: DriverSurface, screen: number): void {
@@ -1357,6 +1532,40 @@ export class EngineImpl implements Engine {
 
   //   this.swapSurfaceToScreen(this.controller.currentSurface, surfaceNum);
   // }
+
+  private firstEmptyDesktopAfter(desktop = 1): number {
+    const currentActivity = this.controller.currentActivity;
+    for (let d = desktop + 1; d <= this.proxy.workspace().desktops; d++) {
+      for (let s = 0; s < this.proxy.workspace().numScreens; s++) {
+        const surface = this.controller.screens(currentActivity, d)[s];
+        if (this.windows.allWindowsOn(surface).length) {
+          continue;
+        }
+        if (s + 1 == this.proxy.workspace().numScreens) {
+          return surface.desktop;
+        }
+      }
+    }
+    // didn't find an empty desktop, so make a new desktop
+    this.proxy.workspace().desktops++;
+    return this.proxy.workspace().desktops;
+  }
+
+  private lastEmptyDesktop(screen: number): number {
+    for (let desktop = this.proxy.workspace().desktops; desktop; desktop--) {
+      const surface = this.controller.screens(
+        this.controller.currentActivity,
+        desktop
+      )[screen];
+      if (this.windows.allWindowsOn(surface).length) {
+        continue;
+      }
+      return surface.desktop;
+    }
+    // didn't find a desktop with that screen empty, so make a new empty desktop
+    this.proxy.workspace().desktops++;
+    return this.proxy.workspace().desktops;
+  }
 
   public showNotification(text: string, icon?: string, hint?: string): void {
     this.controller.showNotification(text, icon, hint);

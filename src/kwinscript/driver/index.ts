@@ -447,41 +447,44 @@ export class DriverImpl implements Driver {
     groupId: number,
     window?: EngineWindow | null
   ): DriverSurface | null {
-    if (!window) {
-      window = this.controller.currentWindow;
-    }
-    if (!window) {
-      return null;
-    }
+    // if (!window) {
+    //   window = this.controller.currentWindow;
+    // }
+    // if (!window) {
+    //   return null;
+    // }
 
-    // find if any surface was currently displaying the window's old group
-    const oldGroup = window.window.group;
-    let oldSurf = null;
-    for (const surf of this.controller.screens()) {
-      if (surf.group == oldGroup) {
-        oldSurf = surf;
-        break;
-      }
-    }
+    // // find if any surface was currently displaying the window's old group
+    // const oldGroup = window.window.group;
+    // let oldSurf = null;
+    // for (const surf of this.controller.screens()) {
+    //   if (surf.group == oldGroup) {
+    //     oldSurf = surf;
+    //     break;
+    //   }
+    // }
 
-    this.log.log(
-      `moving window from group ${oldGroup} to group ${groupId} ${window}`
-    );
+    // this.log.log(
+    //   `moving window from group ${oldGroup} to group ${groupId} ${window}`
+    // );
 
-    // find a surface, if any, to display the window in its new group
-    for (const surf of this.controller.screens()) {
-      if (surf.group == groupId) {
-        this.log.log(`showing window on surface ${surf.screen}`);
+    // // find a surface, if any, to display the window in its new group
+    // for (const surf of this.controller.screens()) {
+    //   if (surf.group == groupId) {
+    //     this.log.log(`showing window on surface ${surf.screen}`);
 
-        window.surface = surf;
-        return oldSurf ? this.controller.screens()[oldSurf.screen] : null;
-      }
-    }
-    // else just hide the window as no surface currently displays its group
+    //     window.surface = surf;
+    //     return oldSurf ? this.controller.screens()[oldSurf.screen] : null;
+    //   }
+    // }
 
-    window.window.group = groupId;
-    window.window.hidden = true;
-    return oldSurf ? this.controller.screens()[oldSurf.screen] : null;
+    // // else just hide the window as no surface currently displays its group
+    // window.window.group = groupId;
+    // const numMonitors = this.controller.screens().length;
+    // window.window.desktop = this.lastEmptyDesktop(window.screen);
+
+    // return oldSurf ? this.controller.screens()[oldSurf.screen] : null;
+    return null;
   }
 
   public swapGroupToSurface(groupId: number, screen: number): void {}
@@ -636,6 +639,11 @@ export class DriverImpl implements Driver {
 
     this.connect(client.frameGeometryChanged, () => {
       this.log.log(`frameGeometryChanged ${window}`);
+
+      if (!window.window.onGeometryChanged()) {
+        return;
+      }
+
       if (moving || client.move) {
         this.controller.onWindowMove(window);
       } else if (resizing || client.resize) {
@@ -659,14 +667,20 @@ export class DriverImpl implements Driver {
     });
 
     this.connect(client.screenChanged, () => {
+      this.log.log(`screenChanged ${window}`);
+
       const oldSurface = window.window.surface;
 
-      for (const surf of this.controller.screens()) {
-        if ((surf as DriverSurfaceImpl).screen == client.screen) {
-          window.surface = surf;
-          break;
-        }
+      if (!window.window.onScreenChanged()) {
+        return;
       }
+
+      // for (const surf of this.controller.screens()) {
+      //   if ((surf as DriverSurfaceImpl).screen == client.screen) {
+      //     window.surface = surf;
+      //     break;
+      //   }
+      // }
 
       this.controller.onWindowScreenChanged(window, oldSurface);
     });
@@ -679,34 +693,37 @@ export class DriverImpl implements Driver {
     );
 
     this.connect(client.desktopChanged, () => {
-      if (!window.window.onWindowDesktopChanged()) {
+      const oldSurface = window.window.surface;
+
+      this.log.log(`desktopChanged ${window}`);
+      if (!window.window.onDesktopChanged()) {
         return;
       }
 
-      // don't allow kwin moving a window to the hidden desktop
-      if (
-        window.desktop == this.kwinApi.workspace.desktops &&
-        !window.window.hidden
-      ) {
-        const badDesktop = window.desktop;
-        window.desktop = this.kwinApi.workspace.currentDesktop;
+      // // don't allow kwin moving a window to the hidden desktop
+      // if (
+      //   window.desktop == this.kwinApi.workspace.desktops &&
+      //   !window.window.hidden
+      // ) {
+      //   const badDesktop = window.desktop;
+      //   window.desktop = this.kwinApi.workspace.currentDesktop;
 
-        this.log.log(`disallowing move to desktop ${badDesktop} ${window}`);
-        this.showNotification(
-          `Don't use desktop ${badDesktop}`,
-          undefined,
-          undefined,
-          undefined,
-          this.kwinApi.workspace.activeScreen
-        );
-        return;
-      } else if (window.desktop == this.kwinApi.workspace.desktops) {
-        // we moved it ourselves to hide it; ignore the event
-        return;
-      }
+      //   this.log.log(`disallowing move to desktop ${badDesktop} ${window}`);
+      //   this.showNotification(
+      //     `Don't use desktop ${badDesktop}`,
+      //     undefined,
+      //     undefined,
+      //     undefined,
+      //     this.kwinApi.workspace.activeScreen
+      //   );
+      //   return;
+      // } else if (window.desktop == this.kwinApi.workspace.desktops) {
+      //   // we moved it ourselves to hide it; ignore the event
+      //   return;
+      // }
       // it's a legitimate move to another desktop, so handle it
 
-      this.controller.onWindowDesktopChanged(window);
+      this.controller.onWindowDesktopChanged(window, oldSurface);
     });
 
     this.connect(client.shadeChanged, () => {

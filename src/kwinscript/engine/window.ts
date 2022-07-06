@@ -134,7 +134,7 @@ export interface EngineWindow {
   /**
    * Surface, the window is currently on
    */
-  surface: DriverSurface | null;
+  surface: DriverSurface;
 
   // group: number;
 
@@ -323,11 +323,11 @@ export class EngineWindowImpl implements EngineWindow {
     return this.internalStatePreviouslyAskedToChangeTo;
   }
 
-  public get surface(): DriverSurface | null {
+  public get surface(): DriverSurface {
     return this.window.surface;
   }
 
-  public set surface(srf: DriverSurface | null) {
+  public set surface(srf: DriverSurface) {
     if (srf) {
       this.shouldCommitFloat = true;
     }

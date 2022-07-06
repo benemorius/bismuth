@@ -108,7 +108,7 @@ export interface Controller {
   ): void;
 
   onWindowActivityChanged(window: EngineWindow): void;
-  onWindowDesktopChanged(window: EngineWindow): void;
+  onWindowDesktopChanged(window: EngineWindow, oldSurface: DriverSurface): void;
   onWindowMinimized(window: EngineWindow): void;
   onWindowUnminimized(window: EngineWindow): void;
   onFullScreenChanged(window: EngineWindow): void;
@@ -334,18 +334,18 @@ export class ControllerImpl implements Controller {
   public onCurrentDesktopChanged(): void {
     this.log.log("onCurrentDesktopChanged");
 
-    if (this.currentDesktop == this.proxy.workspace().desktops) {
-      this.log.log(`tried to access hidden desktop ${this.currentDesktop}`);
-      this.showNotification(
-        `Don't use desktop ${this.currentDesktop}`,
-        undefined,
-        undefined,
-        undefined,
-        -1
-      );
-      this.proxy.workspace().currentDesktop--;
-      return;
-    }
+    // if (this.currentDesktop == this.proxy.workspace().desktops) {
+    //   this.log.log(`tried to access hidden desktop ${this.currentDesktop}`);
+    //   this.showNotification(
+    //     `Don't use desktop ${this.currentDesktop}`,
+    //     undefined,
+    //     undefined,
+    //     undefined,
+    //     -1
+    //   );
+    //   this.proxy.workspace().currentDesktop--;
+    //   return;
+    // }
 
     for (const surf of this.screens()) {
       const layout = this.engine.layouts.getCurrentLayout(surf);
@@ -435,7 +435,7 @@ export class ControllerImpl implements Controller {
   }
 
   public onWindowMove(window: EngineWindow): void {
-    // this.log.log("onWindowMove");
+    this.log.log("onWindowMove");
     /* update the window position in the layout */
     if (window.state !== WindowState.Tiled) {
       return;
@@ -567,17 +567,22 @@ export class ControllerImpl implements Controller {
     window: EngineWindow,
     oldSurface: DriverSurface | null
   ): void {
-    this.log.log("onWindowScreenChanged");
     if (!window.surface) {
       return;
     }
     // this.moveWindowToSurface(window, window.surface);
 
     // const oldSurface = this.driver.moveWindowToGroup(surface.group, window);
+
+    const newSurf = this.screens(this.currentActivity, window.desktop)[
+      window.screen
+    ];
+    window.surface = newSurf;
+
     if (oldSurface) {
       this.engine.arrange(oldSurface);
     }
-    this.engine.arrange(window.surface);
+    this.engine.arrange(newSurf);
   }
 
   public onWindowActivityChanged(window: EngineWindow): void {
@@ -586,7 +591,10 @@ export class ControllerImpl implements Controller {
     // this.moveWindowToSurface(window, window.surface);
   }
 
-  public onWindowDesktopChanged(window: EngineWindow): void {
+  public onWindowDesktopChanged(
+    window: EngineWindow,
+    oldSurface: DriverSurface
+  ): void {
     this.log.log("onWindowDesktopChanged");
 
     this.log.log(`kwin moved window to desktop ${window.desktop}`);
@@ -596,26 +604,39 @@ export class ControllerImpl implements Controller {
       return;
     }
 
-    // find what surface holds the group the window came from, if any
-    let oldSurface = null;
-    for (const surf of this.screens()) {
-      if (surf.group != window.window.group) {
-        continue;
-      }
-      oldSurface = surf;
-      break;
-    }
+    // // // find what surface holds the group the window came from, if any
+    // // let oldSurface = null;
+    // // for (const surf of this.screens()) {
+    // //   if (surf.group != window.window.group) {
+    // //     continue;
+    // //   }
+    // //   oldSurface = surf;
+    // //   break;
+    // // }
 
-    // move window to whatever group is on the monitor the window went to
-    const screen = this.currentSurface.screen;
-    const newSurface = this.screens(this.currentActivity, window.desktop)[
-      screen
-    ];
-    window.window.group = newSurface.group;
+    // // move window to whatever group is on the monitor the window went to
+    // const newSurf = this.screens(this.currentActivity, window.desktop)[
+    //   window.screen
+    // ];
+    // window.surface = newSurf;
 
-    this.log.log(`moved window to group ${newSurface.group}`);
+    // // // move window to whatever group is on the monitor the window went to
+    // // const screen = this.currentSurface.screen;
+    // // const newSurface = this.screens(this.currentActivity, window.desktop)[
+    // //   screen
+    // // ];
+    // // window.window.group = newSurface.group;
 
-    this.engine.arrange(oldSurface);
+    // this.log.log(`moved window to group ${newSurf.group}`);
+
+    // this.engine.arrange(oldSurface);
+    // this.engine.arrange(newSurf);
+
+    const toGroup = this.screens(this.currentActivity, window.desktop)[
+      window.screen
+    ].group;
+    this.log.log(`moving window to group ${toGroup}`);
+    this.engine.moveWindowToGroup(toGroup, window);
   }
 
   public onWindowMinimized(window: EngineWindow): void {
@@ -643,6 +664,7 @@ export class ControllerImpl implements Controller {
     const layout = this.engine.layouts.getCurrentLayout(window.surface);
 
     if (layout.numMasterTiles == undefined) {
+      this.engine.setMaster(window);
       this.engine.arrange(window.surface);
       return;
     }
@@ -745,11 +767,11 @@ export class ControllerImpl implements Controller {
     // this.engine.moveWindowToSurface(window, surface);
     // this.driver.moveWindowToGroup(window, surface);
 
-    const oldSurface = this.driver.moveWindowToGroup(surface.group, window);
-    if (oldSurface) {
-      this.engine.arrange(oldSurface);
-    }
-    this.engine.arrange(surface);
+    // const oldSurface = this.driver.moveWindowToGroup(surface.group, window);
+    // if (oldSurface) {
+    //   this.engine.arrange(oldSurface);
+    // }
+    // this.engine.arrange(surface);
   }
 
   public moveWindowToGroup(
@@ -773,11 +795,12 @@ export class ControllerImpl implements Controller {
     const swapOutGroup = toSurface.group;
 
     // hide windows currently on this surface
-    for (const win of this.engine.windows.allWindowsOn(toSurface)) {
-      if (win.window.desktop != -1) {
-        win.window.hidden = true;
-      }
-    }
+    const windowsLeavingSurface = this.engine.windows.allWindowsOn(toSurface);
+    // for (const win of this.engine.windows.allWindowsOn(toSurface)) {
+    //   if (win.window.desktop != -1) {
+    //     win.window.hidden = true;
+    //   }
+    // }
 
     // find if a surface is already showing this group and needs to be swapped
     let fromSurface: DriverSurface | null = null;

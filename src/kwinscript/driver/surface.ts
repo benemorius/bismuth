@@ -119,7 +119,9 @@ export class DriverSurfaceImpl implements DriverSurface {
   }
 
   public set group(groupID: number) {
-    this.log.log(`setSurfaceGroup: ${this.desktop}:${this.screen} ${groupID}`);
+    this.log.log(
+      `TSProxy.setSurfaceGroup: desktop:screen ${this.desktop}:${this.screen} group ${groupID}`
+    );
     this.proxy.setSurfaceGroup(this.desktop, this.screen, groupID);
     this._group = groupID;
   }

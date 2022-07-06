@@ -47,6 +47,7 @@ export interface WindowStore {
    */
   allWindowsOn(surf: DriverSurface): EngineWindow[];
 
+  allWindows(activity: string, desktop: number): EngineWindow[];
   // allWindowsIn(groupId: number);
 
   /**
@@ -211,5 +212,9 @@ export class WindowStoreImpl implements WindowStore {
 
   public allWindowsOn(surf: DriverSurface): EngineWindow[] {
     return this.list.filter((win) => win.window.on(surf));
+  }
+
+  public allWindows(act: string, desk: number): EngineWindow[] {
+    return this.list.filter((win) => win.visible(act, desk));
   }
 }

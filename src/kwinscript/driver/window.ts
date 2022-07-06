@@ -72,7 +72,7 @@ export interface DriverWindow {
   /**
    * Window's current surface
    */
-  surface: DriverSurface | null;
+  surface: DriverSurface;
 
   group: number;
 
@@ -80,7 +80,9 @@ export interface DriverWindow {
 
   unmanaged: boolean;
 
-  onWindowDesktopChanged(): boolean;
+  onDesktopChanged(): boolean;
+  onScreenChanged(): boolean;
+  onGeometryChanged(): boolean;
 
   /**
    * Whether the window is minimized
@@ -129,6 +131,9 @@ export class DriverWindowImpl implements DriverWindow {
   private _hidden: boolean;
   private _hiding: boolean;
   public unmanaged: boolean;
+  private _changingDesktop: boolean;
+  private _changingScreen: boolean;
+  private _changingGeometry: boolean;
 
   public get fullScreen(): boolean {
     return this.client.fullScreen;
@@ -179,10 +184,25 @@ export class DriverWindowImpl implements DriverWindow {
     );
   }
 
-  public onWindowDesktopChanged(): boolean {
-    // don't handle the event if we triggered it by hiding a window
-    const shouldCallback = !this._hiding;
-    this._hiding = false;
+  public onDesktopChanged(): boolean {
+    // don't handle the event if we triggered it
+    // this.log.log(`this._changingDesktop ${this._changingDesktop}`);
+    const shouldCallback = this._desktop != this.client.desktop;
+    this._desktop = this.client.desktop;
+    return shouldCallback;
+  }
+
+  public onScreenChanged(): boolean {
+    // don't handle the event if we triggered it
+    const shouldCallback = this._screen != this.client.screen;
+    this._screen = this.client.screen;
+    return shouldCallback;
+  }
+
+  public onGeometryChanged(): boolean {
+    // don't handle the event if we triggered it
+    const shouldCallback = !this._changingGeometry;
+    this._changingGeometry = false;
     return shouldCallback;
   }
 
@@ -195,7 +215,8 @@ export class DriverWindowImpl implements DriverWindow {
   }
 
   public set desktop(desktop: number) {
-    this.client.desktop = desktop;
+    // this.client.desktop = desktop;
+    this._desktop = desktop;
 
     // save the allDesktops state to disk
     this.log.log(`TSProxy.getWindowState(): ${this}`);
@@ -239,7 +260,7 @@ export class DriverWindowImpl implements DriverWindow {
 
   public maximized: boolean;
 
-  public get surface(): DriverSurface | null {
+  public get surface(): DriverSurface {
     let activity;
     if (this.client.activities.length === 0) {
       activity = this.proxy.workspace().currentActivity;
@@ -252,20 +273,15 @@ export class DriverWindowImpl implements DriverWindow {
       activity = this.client.activities[0];
     }
 
-    const desktop =
-      this.desktop >= 0 ? this.desktop : this.proxy.workspace().currentDesktop;
-
-    const group = this.group;
-
-    //TODO return null if our group isn't currently shown on any surface
-    if (this.screen === null) {
-      return null;
-    }
+    // //TODO return null if our group isn't currently shown on any surface
+    // if (this.screen === null) {
+    //   return null;
+    // }
 
     return new DriverSurfaceImpl(
       this.screen,
       activity,
-      desktop,
+      this._desktop,
       this.qml.activityInfo,
       this.config,
       this.proxy,
@@ -277,7 +293,7 @@ export class DriverWindowImpl implements DriverWindow {
     // TODO: setting activity?
 
     if (!surf) {
-      this.hidden = true;
+      // this.hidden = true;
       return;
     }
 
@@ -285,17 +301,16 @@ export class DriverWindowImpl implements DriverWindow {
       `DriverWindow.surface(): desktop: ${surf.desktop} screen: ${surf.screen} group: ${surf.group} ${this}`
     );
 
-    if (this.hidden) {
-      this.hidden = false;
-    }
+    // if (this.hidden) {
+    //   this.hidden = false;
+    // }
 
-    const surfImpl = surf as DriverSurfaceImpl;
+    // if (surf.desktop != -1) {
+    //   this.desktop = surf.desktop;
+    // }
 
-    if (surfImpl.desktop != -1) {
-      this.desktop = surfImpl.desktop;
-    }
-
-    this._screen = surfImpl.screen;
+    this._screen = surf.screen;
+    this._desktop = surf.desktop;
 
     this.group = surf.group;
   }
@@ -342,13 +357,13 @@ export class DriverWindowImpl implements DriverWindow {
     this.log.log(`set window hidden ${hide} ${this}`);
     this._hidden = hide;
 
-    if (hide && this.client.desktop != this.proxy.workspace().desktops) {
-      this._desktop = this.client.desktop;
-      this.desktop = this.proxy.workspace().desktops;
-      this._hiding = true;
-    } else if (this.client.desktop == this.proxy.workspace().desktops) {
-      this.client.desktop = this._desktop;
-    }
+    // if (hide && this.client.desktop != this.proxy.workspace().desktops) {
+    //   this._desktop = this.client.desktop;
+    //   this.desktop = this.proxy.workspace().desktops;
+    //   this._hiding = true;
+    // } else if (this.client.desktop == this.proxy.workspace().desktops) {
+    //   this.client.desktop = this._desktop;
+    // }
   }
 
   /**
@@ -376,6 +391,9 @@ export class DriverWindowImpl implements DriverWindow {
     this._hidden = false;
     this._hiding = false;
     this.unmanaged = false;
+    this._changingDesktop = false;
+    this._changingScreen = false;
+    this._changingGeometry = false;
 
     if (!this.shouldIgnore) {
       this._hidden = false;
@@ -408,13 +426,15 @@ export class DriverWindowImpl implements DriverWindow {
 
     if (!this.surface) {
       this.log.log(`tried to commit window with no surface ${this}`);
-      this.hidden = true;
+      // this.hidden = true;
       return;
     }
 
     // let kwin do the move for floating and minimized windows; it does a better job
     if (screen != undefined && screen != this.client.screen) {
       this.log.log(`WorkspaceWrapper.sendClientToScreen(): ${screen} ${this}`);
+      // this._changingScreen = true;
+      this._screen = screen;
       this.proxy.workspace().sendClientToScreen(this.client, screen);
       // kwin picked a good geometry, so don't override it
       geometry = undefined;
@@ -426,9 +446,9 @@ export class DriverWindowImpl implements DriverWindow {
     //   return;
     // }
 
-    if (this.hidden) {
-      this.hidden = false;
-    }
+    // if (this.hidden) {
+    //   this.hidden = false;
+    // }
 
     if (this.client.resize) {
       return;
@@ -489,6 +509,7 @@ export class DriverWindowImpl implements DriverWindow {
       if (this.client.frameGeometry != geometry.toQRect()) {
         if (!this.client.move) {
           this.log.log(`set KWin.Window.frameGeometry: ${this}`);
+          this._changingGeometry = true;
           this.client.frameGeometry = geometry.toQRect();
         } else {
           // // it would be nice to keep the window centered on the cursor as it
@@ -499,12 +520,25 @@ export class DriverWindowImpl implements DriverWindow {
           // this.client.frameGeometry.height += yDelta / 2;
 
           this.log.log(`set KWin.Window.frameGeometry: ${this}`);
+          this._changingGeometry = true;
           this.client.frameGeometry.width = geometry.width;
           this.client.frameGeometry.height = geometry.height;
         }
       } else {
         this.log.log(`KWin.Window.frameGeometry unchanged ${this}`);
       }
+    }
+
+    if (this.client.desktop != this.surface.desktop) {
+      this.log.log(
+        `commit(): moved to desktop ${this.surface.desktop} ${this}`
+      );
+      this._changingDesktop = true;
+      this.client.desktop = this.surface.desktop;
+    } else {
+      this.log.log(
+        `commit(): already on desktop ${this.surface.desktop} ${this}`
+      );
     }
   }
 
@@ -526,23 +560,22 @@ export class DriverWindowImpl implements DriverWindow {
   }
 
   public visibleOn(surf: DriverSurface): boolean {
-    const surfImpl = surf as DriverSurfaceImpl;
-    const win = this as DriverWindow;
-    return (
-      this.visible(surfImpl.activity, surfImpl.desktop) &&
-      (win.group == surf.group || win.screen == surf.screen)
-    );
+    return !this.client.minimized && this.group == surf.group;
+    // return (
+    //   this.visible(surf.activity, surf.desktop) &&
+    //   (this.group == surf.group || this.screen == surf.screen)
+    // );
   }
 
   public on(surf: DriverSurface): boolean {
     const win = this as DriverWindow;
     return (
-      win.group == surf.group ||
-      ((this.client.desktop === surf.desktop ||
-        this.client.desktop === -1) /* on all desktop */ &&
-        (this.client.activities.length === 0 /* on all activities */ ||
-          this.client.activities.indexOf(surf.activity) !== -1) &&
-        win.screen == surf.screen)
+      win.group == surf.group
+      // ((this.client.desktop === surf.desktop ||
+      //   this.client.desktop === -1) /* on all desktop */ &&
+      //   (this.client.activities.length === 0 /* on all activities */ ||
+      //     this.client.activities.indexOf(surf.activity) !== -1) &&
+      //   win.screen == surf.screen)
     );
   }
 
