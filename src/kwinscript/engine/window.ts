@@ -36,6 +36,8 @@ export enum WindowState {
 
 export interface WindowConfig {
   group: number;
+  class: string;
+  title: string;
   minimized: boolean;
   allDesktops: boolean;
   state: WindowState;
@@ -110,7 +112,7 @@ export interface EngineWindow {
   /**
    * Screen number, on which the window is present
    */
-  readonly screen: number | null;
+  readonly screen: number;
 
   desktop: number;
 
@@ -211,7 +213,7 @@ export class EngineWindowImpl implements EngineWindow {
     return this.window.shouldIgnore;
   }
 
-  public get screen(): number | null {
+  public get screen(): number {
     return this.window.screen;
   }
 
@@ -326,6 +328,9 @@ export class EngineWindowImpl implements EngineWindow {
   }
 
   public set surface(srf: DriverSurface | null) {
+    if (srf) {
+      this.shouldCommitFloat = true;
+    }
     this.window.surface = srf;
   }
 
@@ -397,7 +402,7 @@ export class EngineWindowImpl implements EngineWindow {
     }
 
     const state = this.state;
-    this.log.log(`commit state: ${state} ${this}`);
+    this.log.log(`commit state: ${WindowState[state]} ${this}`);
     switch (state) {
       case WindowState.NativeMaximized:
         this.window.commit(this.window.surface.workingArea);
@@ -411,28 +416,27 @@ export class EngineWindowImpl implements EngineWindow {
         if (!this.shouldCommitFloat) {
           break;
         }
-        this.log.log(`commit floating`);
-        this.window.commit(this.floatGeometry, false);
+        this.window.commit(this.floatGeometry, this.screen, false);
         this.shouldCommitFloat = false;
         break;
 
       case WindowState.Maximized:
-        this.window.commit(this.geometry, true);
+        this.window.commit(this.geometry, undefined, true);
         break;
 
       case WindowState.Tiled:
-        this.window.commit(this.geometry, this.config.noTileBorder);
+        this.window.commit(this.geometry, undefined, this.config.noTileBorder);
         break;
 
       case WindowState.NativeMinimized:
-        this.window.commit(undefined, this.config.noTileBorder);
+        this.window.commit(undefined, this.screen, this.config.noTileBorder);
         break;
 
       case WindowState.TiledAfloat:
         if (!this.shouldCommitFloat) {
           break;
         }
-        this.window.commit(this.floatGeometry, false);
+        this.window.commit(this.floatGeometry, this.screen, false);
         this.shouldCommitFloat = false;
         break;
     }

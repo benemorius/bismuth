@@ -167,9 +167,9 @@ export class WindowStoreImpl implements WindowStore {
     const windowStack = this.tiledWindowsIn(window.window.group).filter(
       (win) => !win.minimized || win == window
     );
-    this.log.log(`checking ${window.window.group}`);
+    // this.log.log(`checking ${window.window.group}`);
     const foundIndex = windowStack.indexOf(window);
-    this.log.log(`found at ${foundIndex}`);
+    // this.log.log(`found at ${foundIndex}`);
     return 0 <= foundIndex && foundIndex < stackSize;
   }
 

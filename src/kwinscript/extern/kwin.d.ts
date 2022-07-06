@@ -79,6 +79,7 @@ declare namespace KWin {
 
     showOutline(geometry: QRect): void;
     supportInformation(): string;
+    sendClientToScreen(client: KWin.Toplevel, screen: number): void;
   }
 
   interface Options {

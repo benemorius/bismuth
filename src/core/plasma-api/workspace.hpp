@@ -68,6 +68,8 @@ public:
     Q_INVOKABLE bool setWindowHidden(QObject *client, bool isHidden);
     Q_INVOKABLE bool isWindowHidden(QObject *client);
 
+    Q_INVOKABLE void sendClientToScreen(QObject *client, int screen);
+
     Q_INVOKABLE std::vector<PlasmaApi::Client> clientList() const;
 
 private Q_SLOTS:

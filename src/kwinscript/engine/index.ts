@@ -469,14 +469,14 @@ export class EngineImpl implements Engine {
     const visibleWindows = this.windows.allWindowsOn(surface);
 
     for (const win of visibleWindows) {
-      this.log.log(`committing: ${win}`);
+      // this.log.log(`committing: ${win}`);
       if ((win.window as DriverWindowImpl).client.screen != surface.screen) {
-        this.log.log(`correcting window to screen ${surface.screen}`);
+        this.log.log(`correcting window to screen ${surface.screen} ${win}`);
         win.surface = surface;
-        if (win.state == WindowState.NativeMinimized) {
-          this.log.log(`correcting minimized window ${win}`);
-          win.geometry = surface.workingArea;
-        }
+        // if (win.state == WindowState.NativeMinimized) {
+        //   this.log.log(`correcting minimized window ${win}`);
+        //   win.geometry = surface.workingArea;
+        // }
       }
       win.commit();
     }
@@ -627,7 +627,7 @@ export class EngineImpl implements Engine {
     for (const window of (this.windows as WindowStoreImpl).list) {
       list.push((window.window as DriverWindowImpl).client.windowId.toString());
     }
-    this.log.log("writing window list to disk");
+    this.log.log(`TSProxy.putWindowList(): writing window list to disk`);
     this.proxy.putWindowList(JSON.stringify(list));
   }
 
@@ -1304,9 +1304,10 @@ export class EngineImpl implements Engine {
       `Recalled Group ${groupId}`
     );
 
-    // focus the most recently focused window on this surface
+    // focus the most recently focused non-minimized window on this surface
     const lastWindow = this.windows
       .allWindowsOn(this.controller.currentSurface)
+      .filter((win) => !win.minimized)
       .sort((a, b) => b.timestamp - a.timestamp)[0];
     if (lastWindow) {
       this.controller.currentWindow = lastWindow;

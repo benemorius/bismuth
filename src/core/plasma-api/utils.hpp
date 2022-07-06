@@ -49,3 +49,14 @@
 
         // std::cout << "res: " << res << std::endl; \
 
+
+#define BI_METHOD_IMPL_WRAP_VOID(SIGNATURE, ...)                                                                                                     \
+    {                                                                                                                                                          \
+        auto implMeta = m_kwinImpl->metaObject();                                                                                                              \
+        /* Signature must not contain return value and cost status*/                                                                                           \
+        auto normSignature = QMetaObject::normalizedSignature(SIGNATURE);                                                                                      \
+        auto methodIndex = implMeta->indexOfMethod(normSignature);                                                                                             \
+        auto method = implMeta->method(methodIndex);                                                                                                           \
+        method.invoke(m_kwinImpl, Qt::DirectConnection, __VA_ARGS__);                                           \
+        return; \
+    }

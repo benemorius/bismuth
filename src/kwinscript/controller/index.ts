@@ -234,9 +234,13 @@ export class ControllerImpl implements Controller {
     this.driver.bindEvents();
     this.bindShortcuts();
 
-    this.driver.manageWindows();
+    const windows = this.driver.manageWindows();
+
+    this.restoreWindows(windows);
 
     this.engine.arrange();
+
+    this.driver.manageWindowsFinal(windows);
 
     // show OSD notification on each monitor
     for (const surf of this.screens()) {
@@ -556,7 +560,7 @@ export class ControllerImpl implements Controller {
   }
 
   public onWindowGeometryChanged(window: EngineWindow): void {
-    this.log.log(["onWindowGeometryChanged", { window }]);
+    // this.log.log(["onWindowGeometryChanged", { window }]);
   }
 
   public onWindowScreenChanged(
@@ -578,9 +582,6 @@ export class ControllerImpl implements Controller {
 
   public onWindowActivityChanged(window: EngineWindow): void {
     this.log.log("onWindowActivityChanged");
-    if (window.screen == null) {
-      return;
-    }
     this.engine.arrange(this.screens()[window.screen]);
     // this.moveWindowToSurface(window, window.surface);
   }
@@ -618,7 +619,7 @@ export class ControllerImpl implements Controller {
   }
 
   public onWindowMinimized(window: EngineWindow): void {
-    if (!window.surface) {
+    if (!window.surface || window.floating) {
       return;
     }
     const layout = this.engine.layouts.getCurrentLayout(window.surface);
@@ -636,7 +637,7 @@ export class ControllerImpl implements Controller {
   }
 
   public onWindowUnminimized(window: EngineWindow): void {
-    if (!window.surface) {
+    if (!window.surface || window.floating) {
       return;
     }
     const layout = this.engine.layouts.getCurrentLayout(window.surface);
@@ -773,7 +774,9 @@ export class ControllerImpl implements Controller {
 
     // hide windows currently on this surface
     for (const win of this.engine.windows.allWindowsOn(toSurface)) {
-      win.window.hidden = true;
+      if (win.window.desktop != -1) {
+        win.window.hidden = true;
+      }
     }
 
     // find if a surface is already showing this group and needs to be swapped
@@ -800,7 +803,7 @@ export class ControllerImpl implements Controller {
 
     // otherwise just map the group to the surface
 
-    this.log.log(`setting screen ${screen} to group ${groupId}`);
+    this.log.log(`swapGroupToSurface(): set ${screen} to group ${groupId}`);
     toSurface.group = groupId;
 
     // unhide windows now on this surface

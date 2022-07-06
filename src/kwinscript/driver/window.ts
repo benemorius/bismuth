@@ -55,7 +55,7 @@ export interface DriverWindow {
   /**
    * The screen number the window is currently at
    */
-  readonly screen: number | null;
+  readonly screen: number;
 
   desktop: number;
 
@@ -78,6 +78,10 @@ export interface DriverWindow {
 
   hidden: boolean;
 
+  unmanaged: boolean;
+
+  onWindowDesktopChanged(): boolean;
+
   /**
    * Whether the window is minimized
    */
@@ -94,7 +98,12 @@ export interface DriverWindow {
    * @param noBorder
    * @param keepAbove
    */
-  commit(geometry?: Rect, noBorder?: boolean, keepAbove?: boolean): void;
+  commit(
+    geometry?: Rect,
+    screen?: number,
+    noBorder?: boolean,
+    keepAbove?: boolean
+  ): void;
 
   /**
    * Whether the window is visible on the specified surface
@@ -115,9 +124,11 @@ export interface DriverWindow {
 export class DriverWindowImpl implements DriverWindow {
   public readonly id: string;
   private _desktop: number;
-  private _screen: number | null;
+  private _screen: number;
   private _group: number;
   private _hidden: boolean;
+  private _hiding: boolean;
+  public unmanaged: boolean;
 
   public get fullScreen(): boolean {
     return this.client.fullScreen;
@@ -168,10 +179,14 @@ export class DriverWindowImpl implements DriverWindow {
     );
   }
 
-  public get screen(): number | null {
-    if (this._screen === null || this._screen < 0 || this._screen > 4) {
-      this.log.log(`got invalid screen ${this._screen}`);
-    }
+  public onWindowDesktopChanged(): boolean {
+    // don't handle the event if we triggered it by hiding a window
+    const shouldCallback = !this._hiding;
+    this._hiding = false;
+    return shouldCallback;
+  }
+
+  public get screen(): number {
     return this._screen;
   }
 
@@ -180,16 +195,17 @@ export class DriverWindowImpl implements DriverWindow {
   }
 
   public set desktop(desktop: number) {
-    this.log.log(`set window to desktop ${desktop} ${this}`);
     this.client.desktop = desktop;
 
     // save the allDesktops state to disk
+    this.log.log(`TSProxy.getWindowState(): ${this}`);
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
 
     state.allDesktops = this.client.desktop == -1;
 
+    this.log.log(`TSProxy.putWindowState(): desktop: ${desktop} ${this}`);
     this.proxy.putWindowState(
       this.client.windowId.toString(),
       JSON.stringify(state)
@@ -203,12 +219,14 @@ export class DriverWindowImpl implements DriverWindow {
   public set minimized(min: boolean) {
     this.client.minimized = min;
 
+    this.log.log(`TSProxy.getWindowState(): ${this}`);
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
 
     state.minimized = min;
 
+    this.log.log(`TSProxy.putWindowState(): minimized: ${min} ${this}`);
     this.proxy.putWindowState(
       this.client.windowId.toString(),
       JSON.stringify(state)
@@ -260,11 +278,16 @@ export class DriverWindowImpl implements DriverWindow {
 
     if (!surf) {
       this.hidden = true;
-      this._screen = null;
       return;
     }
 
-    this.hidden = false;
+    this.log.log(
+      `DriverWindow.surface(): desktop: ${surf.desktop} screen: ${surf.screen} group: ${surf.group} ${this}`
+    );
+
+    if (this.hidden) {
+      this.hidden = false;
+    }
 
     const surfImpl = surf as DriverSurfaceImpl;
 
@@ -273,10 +296,6 @@ export class DriverWindowImpl implements DriverWindow {
     }
 
     this._screen = surfImpl.screen;
-
-    this.log.log(
-      `window setting surface ${surfImpl.screen} group ${surf.group}`
-    );
 
     this.group = surf.group;
   }
@@ -299,12 +318,16 @@ export class DriverWindowImpl implements DriverWindow {
   public set group(groupId: number) {
     this._group = groupId;
 
+    this.log.log(`TSProxy.getWindowState(): ${this}`);
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
 
     state.group = groupId;
+    state.class = this.client.resourceClass.toString();
+    state.title = this.client.caption.toString();
 
+    this.log.log(`TSProxy.putWindowState(): group: ${groupId} ${this}`);
     this.proxy.putWindowState(
       this.client.windowId.toString(),
       JSON.stringify(state)
@@ -322,6 +345,7 @@ export class DriverWindowImpl implements DriverWindow {
     if (hide && this.client.desktop != this.proxy.workspace().desktops) {
       this._desktop = this.client.desktop;
       this.desktop = this.proxy.workspace().desktops;
+      this._hiding = true;
     } else if (this.client.desktop == this.proxy.workspace().desktops) {
       this.client.desktop = this._desktop;
     }
@@ -350,9 +374,11 @@ export class DriverWindowImpl implements DriverWindow {
     this._screen = client.screen;
     this._group = 0;
     this._hidden = false;
+    this._hiding = false;
+    this.unmanaged = false;
 
     if (!this.shouldIgnore) {
-      this.hidden = false;
+      this._hidden = false;
     }
   }
 
@@ -362,6 +388,7 @@ export class DriverWindowImpl implements DriverWindow {
 
   public commit(
     geometry?: Rect,
+    screen?: number,
     noBorder?: boolean,
     keepAbove?: boolean
   ): void {
@@ -375,10 +402,22 @@ export class DriverWindowImpl implements DriverWindow {
     //   `
     // );
 
+    this.log.log(
+      `commit(): screen: ${screen} geometry: ${geometry} window: ${this}`
+    );
+
     if (!this.surface) {
       this.log.log(`tried to commit window with no surface ${this}`);
       this.hidden = true;
       return;
+    }
+
+    // let kwin do the move for floating and minimized windows; it does a better job
+    if (screen != undefined && screen != this.client.screen) {
+      this.log.log(`WorkspaceWrapper.sendClientToScreen(): ${screen} ${this}`);
+      this.proxy.workspace().sendClientToScreen(this.client, screen);
+      // kwin picked a good geometry, so don't override it
+      geometry = undefined;
     }
 
     // if (this.surface.group != this.group) {
@@ -387,7 +426,9 @@ export class DriverWindowImpl implements DriverWindow {
     //   return;
     // }
 
-    this.hidden = false;
+    if (this.hidden) {
+      this.hidden = false;
+    }
 
     if (this.client.resize) {
       return;
@@ -447,7 +488,7 @@ export class DriverWindowImpl implements DriverWindow {
       }
       if (this.client.frameGeometry != geometry.toQRect()) {
         if (!this.client.move) {
-          this.log.log(`update window ${this}`);
+          this.log.log(`set KWin.Window.frameGeometry: ${this}`);
           this.client.frameGeometry = geometry.toQRect();
         } else {
           // // it would be nice to keep the window centered on the cursor as it
@@ -457,11 +498,12 @@ export class DriverWindowImpl implements DriverWindow {
           // this.client.frameGeometry.width += xDelta / 2;
           // this.client.frameGeometry.height += yDelta / 2;
 
+          this.log.log(`set KWin.Window.frameGeometry: ${this}`);
           this.client.frameGeometry.width = geometry.width;
           this.client.frameGeometry.height = geometry.height;
         }
       } else {
-        this.log.log(`no update window ${this}`);
+        this.log.log(`KWin.Window.frameGeometry unchanged ${this}`);
       }
     }
   }

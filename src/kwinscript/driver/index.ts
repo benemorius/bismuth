@@ -73,7 +73,8 @@ export interface Driver {
   /**
    * Manage the windows, that were active before script loading
    */
-  manageWindows(): void;
+  manageWindows(): EngineWindow[];
+  manageWindowsFinal(windows: EngineWindow[]): void;
 
   moveWindowToGroup(
     groupId: number,
@@ -81,6 +82,8 @@ export interface Driver {
   ): DriverSurface | null;
 
   swapGroupToSurface(groupId: number, screen: number): void;
+
+  onWindowDesktopChanged(window: DriverWindow, desktop: number): void;
 
   /**
    * Destroy all callbacks and other non-GC resources
@@ -329,23 +332,6 @@ export class DriverImpl implements Driver {
       // }
     };
 
-    const onClientMinimized = (client: KWin.Client): void => {
-      this.log.log(`onClientMinimized`);
-      if (this.config.preventMinimize) {
-        client.minimized = false;
-        this.kwinApi.workspace.activeClient = client;
-        return;
-      }
-      const window = this.windowMap.get(client);
-
-      if (!window) {
-        return;
-      }
-      window.minimized = true;
-
-      this.controller.onWindowMinimized(window);
-    };
-
     const onClientUnminimized = (client: KWin.Client): void => {
       const window = this.windowMap.get(client);
       this.log.log(`onClientUnminimized`);
@@ -374,7 +360,6 @@ export class DriverImpl implements Driver {
     this.connect(this.kwinApi.workspace.clientAdded, onClientAdded);
     this.connect(this.kwinApi.workspace.clientRemoved, onClientRemoved);
     this.connect(this.kwinApi.workspace.clientMaximizeSet, onClientMaximizeSet);
-    this.connect(this.kwinApi.workspace.clientMinimized, onClientMinimized);
     this.connect(this.kwinApi.workspace.clientUnminimized, onClientUnminimized);
     // this.connect(
     //   this.kwinApi.workspace.workspaceDestroyed,
@@ -382,7 +367,7 @@ export class DriverImpl implements Driver {
     // );
   }
 
-  public manageWindows(): void {
+  public manageWindows(): EngineWindow[] {
     const clients = this.kwinApi.workspace.clientList();
     // TODO: provide interface for using the "for of" cycle
     const windows: EngineWindow[] = [];
@@ -392,7 +377,32 @@ export class DriverImpl implements Driver {
         windows.push(window);
       }
     }
-    this.controller.restoreWindows(windows);
+    return windows;
+  }
+
+  public manageWindowsFinal(windows: EngineWindow[]): void {
+    for (const win of windows) {
+      this.bindWindowEvents(win, (win.window as DriverWindowImpl).client);
+    }
+
+    const onClientMinimized = (client: KWin.Client): void => {
+      this.log.log(`onClientMinimized`);
+      if (this.config.preventMinimize) {
+        client.minimized = false;
+        this.kwinApi.workspace.activeClient = client;
+        return;
+      }
+      const window = this.windowMap.get(client);
+
+      if (!window) {
+        return;
+      }
+      window.minimized = true;
+
+      this.controller.onWindowMinimized(window);
+    };
+
+    this.connect(this.kwinApi.workspace.clientMinimized, onClientMinimized);
   }
 
   /**
@@ -430,9 +440,6 @@ export class DriverImpl implements Driver {
     // if (window.desktop == this.kwinApi.workspace.desktops) {
     //   window.window.desktop = this.currentDesktop;
     // }
-
-    this.bindWindowEvents(window, client);
-
     return window;
   }
 
@@ -503,6 +510,10 @@ export class DriverImpl implements Driver {
         this.qml.popupDialog4.show(text, icon, hint, subtext, screen);
         break;
     }
+  }
+
+  public onWindowDesktopChanged(window: DriverWindow, desktop: number): void {
+
   }
 
   public onCurrentDesktopChanged(): void {
@@ -624,7 +635,7 @@ export class DriverImpl implements Driver {
     });
 
     this.connect(client.frameGeometryChanged, () => {
-      this.log.log(`frameGeometryChanged`);
+      this.log.log(`frameGeometryChanged ${window}`);
       if (moving || client.move) {
         this.controller.onWindowMove(window);
       } else if (resizing || client.resize) {
@@ -641,6 +652,7 @@ export class DriverImpl implements Driver {
     });
 
     this.connect(client.activeChanged, () => {
+      this.log.log(`activeChanged ${client.active} ${window}`);
       if (client.active) {
         this.controller.onWindowFocused(window);
       }
@@ -667,6 +679,10 @@ export class DriverImpl implements Driver {
     );
 
     this.connect(client.desktopChanged, () => {
+      if (!window.window.onWindowDesktopChanged()) {
+        return;
+      }
+
       // don't allow kwin moving a window to the hidden desktop
       if (
         window.desktop == this.kwinApi.workspace.desktops &&

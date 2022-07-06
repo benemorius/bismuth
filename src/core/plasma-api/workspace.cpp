@@ -89,6 +89,13 @@ QRect Workspace::clientArea(ClientAreaOption option, int screen, int desktop)
 //   return apiCallRes;
 // };
 
+void Workspace::sendClientToScreen(QObject *client, int screen)
+{
+  KWin::AbstractClient *cli = reinterpret_cast<KWin::AbstractClient *>(client);
+  // qDebug(Bi) << "sendClientToScreen" << screen << cli;
+  BI_METHOD_IMPL_WRAP_VOID("sendClientToScreen(KWin::Window *, int)", Q_ARG(KWin::AbstractClient *, cli), Q_ARG(int, screen));
+}
+
 bool Workspace::isWindowHidden(QObject *client)
 {
   KWin::AbstractClient *cli = reinterpret_cast<KWin::AbstractClient *>(client);
