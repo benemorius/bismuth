@@ -74,7 +74,7 @@ export interface DriverWindow {
    */
   surface: DriverSurface;
 
-  group: number;
+  group: string | undefined;
 
   hidden: boolean;
 
@@ -120,14 +120,14 @@ export interface DriverWindow {
    * @param activity the activity to check
    * @param desktop the desktop to check
    */
-  visible(activity: string, desktop: number): boolean;
+  visible(surfaces: DriverSurface[]): boolean;
 }
 
 export class DriverWindowImpl implements DriverWindow {
   public readonly id: string;
   private _desktop: number;
   private _screen: number;
-  private _group: number;
+  private _group: string | undefined;
   private _hidden: boolean;
   private _hiding: boolean;
   public unmanaged: boolean;
@@ -298,7 +298,7 @@ export class DriverWindowImpl implements DriverWindow {
     }
 
     this.log.log(
-      `DriverWindow.surface(): desktop: ${surf.desktop} screen: ${surf.screen} group: ${surf.group} ${this}`
+      `DriverWindow.surface(): desktop: ${surf.desktop} screen: ${surf.screen} groups: ${surf.groups} ${this}`
     );
 
     // if (this.hidden) {
@@ -312,37 +312,37 @@ export class DriverWindowImpl implements DriverWindow {
     this._screen = surf.screen;
     this._desktop = surf.desktop;
 
-    this.group = surf.group;
+    // this.group = surf.group;
   }
 
   private noBorderManaged: boolean;
   private noBorderOriginal: boolean;
 
-  public get group(): number {
-    if (this._group) {
+  public get group(): string | undefined {
+    if (this._group != null) {
       return this._group;
     }
 
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
-    this._group = state.group;
+    this._group = state.group != "" ? state.group : undefined;
     return this._group;
   }
 
-  public set group(groupId: number) {
-    this._group = groupId;
+  public set group(groupName: string | undefined) {
+    this._group = groupName;
 
     this.log.log(`TSProxy.getWindowState(): ${this}`);
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
 
-    state.group = groupId;
+    state.group = groupName != undefined ? groupName : "";
     state.class = this.client.resourceClass.toString();
     state.title = this.client.caption.toString();
 
-    this.log.log(`TSProxy.putWindowState(): group: ${groupId} ${this}`);
+    this.log.log(`TSProxy.putWindowState(): group: ${groupName} ${this}`);
     this.proxy.putWindowState(
       this.client.windowId.toString(),
       JSON.stringify(state)
@@ -387,7 +387,7 @@ export class DriverWindowImpl implements DriverWindow {
     this.noBorderOriginal = client.noBorder;
     this._desktop = client.desktop;
     this._screen = client.screen;
-    this._group = 0;
+    this._group = undefined;
     this._hidden = false;
     this._hiding = false;
     this.unmanaged = false;
@@ -529,7 +529,10 @@ export class DriverWindowImpl implements DriverWindow {
       }
     }
 
-    if (this.client.desktop != this.surface.desktop) {
+    if (
+      !this.client.onAllDesktops &&
+      this.client.desktop != this.surface.desktop
+    ) {
       this.log.log(
         `commit(): moved to desktop ${this.surface.desktop} ${this}`
       );
@@ -537,7 +540,7 @@ export class DriverWindowImpl implements DriverWindow {
       this.client.desktop = this.surface.desktop;
     } else {
       this.log.log(
-        `commit(): already on desktop ${this.surface.desktop} ${this}`
+        `commit(): already on desktop ${this.client.desktop} ${this}`
       );
     }
   }
@@ -549,18 +552,28 @@ export class DriverWindowImpl implements DriverWindow {
     })`;
   }
 
-  public visible(activity: string, desktop: number): boolean {
-    return (
-      !this.client.minimized &&
-      (this.client.desktop === desktop ||
-        this.client.desktop === -1) /* on all desktop */ &&
-      (this.client.activities.length === 0 /* on all activities */ ||
-        this.client.activities.indexOf(activity) !== -1)
-    );
+  // public visible(activity: string, desktop: number): boolean {
+  //   return (
+  //     !this.client.minimized &&
+  //     (this.client.desktop === desktop ||
+  //       this.client.desktop === -1) /* on all desktop */ &&
+  //     (this.client.activities.length === 0 /* on all activities */ ||
+  //       this.client.activities.indexOf(activity) !== -1)
+  //   );
+  // }
+
+  public visible(surfs: DriverSurface[]): boolean {
+    for (const surf of surfs) {
+      if (this.visibleOn(surf)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public visibleOn(surf: DriverSurface): boolean {
-    return !this.client.minimized && this.group == surf.group;
+    return !this.client.minimized && this.on(surf);
+    // return !this.client.minimized && this.group == surf.group;
     // return (
     //   this.visible(surf.activity, surf.desktop) &&
     //   (this.group == surf.group || this.screen == surf.screen)
@@ -570,12 +583,12 @@ export class DriverWindowImpl implements DriverWindow {
   public on(surf: DriverSurface): boolean {
     const win = this as DriverWindow;
     return (
-      win.group == surf.group
-      // ((this.client.desktop === surf.desktop ||
-      //   this.client.desktop === -1) /* on all desktop */ &&
-      //   (this.client.activities.length === 0 /* on all activities */ ||
-      //     this.client.activities.indexOf(surf.activity) !== -1) &&
-      //   win.screen == surf.screen)
+      (win.group != undefined && surf.groups.includes(win.group)) ||
+      ((this.client.desktop === surf.desktop ||
+        this.client.desktop === -1) /* on all desktop */ &&
+        (this.client.activities.length === 0 /* on all activities */ ||
+          this.client.activities.indexOf(surf.activity) !== -1) &&
+        win.screen == surf.screen)
     );
   }
 

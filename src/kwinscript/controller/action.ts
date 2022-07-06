@@ -711,7 +711,7 @@ export class ToggleSpiralLayout extends ToggleCurrentLayout {
 abstract class SwapGroupToSurface extends ActionImpl implements Action {
   constructor(
     protected engine: Engine,
-    protected surfaceNum: number,
+    protected group: number,
     key: string,
     description: string,
     defaultShortcut: string,
@@ -721,7 +721,7 @@ abstract class SwapGroupToSurface extends ActionImpl implements Action {
   }
 
   public executeWithoutLayoutOverride(): void {
-    this.engine.swapGroupToActiveSurface(this.surfaceNum);
+    this.engine.summonGroupToActiveSurface(this.group.toString());
   }
 }
 
@@ -988,7 +988,7 @@ export class SwapGroup20ToSurface extends SwapGroupToSurface {
 abstract class ChangeWindowToGroup extends ActionImpl implements Action {
   constructor(
     protected engine: Engine,
-    protected screen: number,
+    protected group: number,
     key: string,
     description: string,
     defaultShortcut: string,
@@ -998,7 +998,7 @@ abstract class ChangeWindowToGroup extends ActionImpl implements Action {
   }
 
   public executeWithoutLayoutOverride(): void {
-    this.engine.moveWindowToGroup(this.screen);
+    this.engine.addWindowToGroup(this.group.toString());
   }
 }
 

@@ -313,7 +313,7 @@ void TSProxy::putWindowList(const QString list)
     file.close();
 }
 
-int TSProxy::getSurfaceGroup(int desktop, int screen)
+QVector<QString> TSProxy::getSurfaceGroups(int desktop, int screen)
 {
     QString fileText;
     QFile file;
@@ -327,11 +327,14 @@ int TSProxy::getSurfaceGroup(int desktop, int screen)
     QJsonObject surfs = root["Surfaces"].toObject();
 
     QString id = QString("%1:%2").arg(desktop).arg(screen);
+    QString groupString = surfs[id].toObject()["groups"].toString();
+    QStringList groups = groupString.split(",");
+    groups.removeAll({}); // remove empty entries
 
-    return surfs[id].toObject()["group"].toInt();
+    return groups.toVector();
 }
 
-void TSProxy::setSurfaceGroup(int desktop, int screen, int groupID)
+void TSProxy::setSurfaceGroups(int desktop, int screen, QVector<QString> groups)
 {
     QString fileText;
     QFile file;
@@ -347,7 +350,7 @@ void TSProxy::setSurfaceGroup(int desktop, int screen, int groupID)
     QString id = QString("%1:%2").arg(desktop).arg(screen);
 
     QJsonObject surf = surfs[id].toObject();
-    surf["group"] = groupID;
+    surf["groups"] = groups.toList().join(",");
 
     surfs[id] = surf;
     root["Surfaces"] = surfs;

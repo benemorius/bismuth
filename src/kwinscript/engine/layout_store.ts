@@ -130,14 +130,14 @@ export default class LayoutStore {
   public getCurrentLayout(srf: DriverSurface): WindowsLayout {
     return srf.ignore
       ? FloatingLayout.instance
-      : this.getEntry(`${srf.screen}:${srf.group}`).currentLayout;
+      : this.getEntry(`${srf.screen}:${srf.groups}`).currentLayout;
   }
 
   public cycleLayout(srf: DriverSurface, step: 1 | -1): WindowsLayout | null {
     if (srf.ignore) {
       return null;
     }
-    return this.getEntry(`${srf.screen}:${srf.group}`).cycleLayout(step);
+    return this.getEntry(`${srf.screen}:${srf.groups}`).cycleLayout(step);
   }
 
   public toggleLayout(
@@ -147,7 +147,7 @@ export default class LayoutStore {
     if (surf.ignore) {
       return null;
     }
-    return this.getEntry(`${surf.screen}:${surf.group}`).toggleLayout(
+    return this.getEntry(`${surf.screen}:${surf.groups}`).toggleLayout(
       layoutClassID
     );
   }

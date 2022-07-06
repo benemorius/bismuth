@@ -31,7 +31,7 @@ export interface DriverSurface {
 
   screen: number;
 
-  group: number;
+  groups: string[];
 
   desktop: number;
 
@@ -47,7 +47,7 @@ export class DriverSurfaceImpl implements DriverSurface {
   public readonly id: string;
   public readonly ignore: boolean;
   public workingArea: Rect;
-  private _group: number;
+  private _groups: string[] | null;
 
   constructor(
     private _screen: number,
@@ -59,7 +59,7 @@ export class DriverSurfaceImpl implements DriverSurface {
     private log: Log
   ) {
     this.id = this.generateId();
-    this._group = 0;
+    this._groups = null;
 
     // this.log.log(`surface made with ${_group}`);
 
@@ -102,33 +102,37 @@ export class DriverSurfaceImpl implements DriverSurface {
     return this._screen;
   }
 
-  public get group(): number {
-    if (this._group) {
-      return this._group;
+  public get groups(): string[] {
+    if (this._groups != null) {
+      return this._groups;
     }
 
-    let g = this.proxy.getSurfaceGroup(this.desktop, this.screen);
-    if (!g) {
-      const customScreenOrder = [4, 1, 3, 2, 5, 6, 7, 8, 9];
-      g = (this.desktop - 1) * 5 + customScreenOrder[this.screen];
-      this.log.log(`initialize ${this.desktop}:${this.screen} to group ${g}`);
-      this.group = g;
-    }
-    this._group = g;
-    return g;
+    const groupList = this.proxy.getSurfaceGroups(this.desktop, this.screen);
+    this.log.log(
+      `TSProxy.getSurfaceGroups: desktop:screen ${this.desktop}:${this.screen} groups ${groupList}`
+    );
+    // if (!g) {
+    //   const customScreenOrder = [4, 1, 3, 2, 5, 6, 7, 8, 9];
+    //   g = (this.desktop - 1) * 5 + customScreenOrder[this.screen];
+    //   this.log.log(`initialize ${this.desktop}:${this.screen} to group ${g}`);
+    //   this.group = g;
+    // }
+    this._groups = groupList;
+    return groupList;
   }
 
-  public set group(groupID: number) {
+  public set groups(groupList: string[]) {
     this.log.log(
-      `TSProxy.setSurfaceGroup: desktop:screen ${this.desktop}:${this.screen} group ${groupID}`
+      `TSProxy.setSurfaceGroups: desktop:screen ${this.desktop}:${this.screen} groups ${groupList}`
     );
-    this.proxy.setSurfaceGroup(this.desktop, this.screen, groupID);
-    this._group = groupID;
+    this.log.log(`setting ${groupList.length} groups`);
+    this.proxy.setSurfaceGroups(this.desktop, this.screen, groupList);
+    this._groups = groupList;
   }
 
   public toString(): string {
     const activityName = this.activityInfo.activityName(this.activity);
-    return `DriverSurface(${this.screen}, ${activityName}, ${this.desktop})`;
+    return `DriverSurface(${this.desktop}:${this.screen} ${activityName} <${this.groups}>)`;
   }
 
   private generateId(): string {

@@ -35,7 +35,7 @@ export enum WindowState {
 }
 
 export interface WindowConfig {
-  group: number;
+  group: string;
   class: string;
   title: string;
   minimized: boolean;
@@ -165,7 +165,7 @@ export interface EngineWindow {
    * @param activity the activity to check
    * @param desktop the desktop to check
    */
-  visible(activity: string, desktop: number): boolean;
+  visible(surfaces: DriverSurface[]): boolean;
 
   /**
    * Force apply the geometry *immediately*.
@@ -335,7 +335,7 @@ export class EngineWindowImpl implements EngineWindow {
   }
 
   public get weight(): number {
-    const srfID = this.window.group;
+    const srfID = this.window.surface.id;
     const winWeight: number | undefined = this.weightMap[srfID];
     if (winWeight === undefined) {
       this.weightMap[srfID] = 1.0;
@@ -345,7 +345,7 @@ export class EngineWindowImpl implements EngineWindow {
   }
 
   public set weight(value: number) {
-    const srfID = this.window.group;
+    const srfID = this.window.surface.id;
     this.weightMap[srfID] = value;
   }
 
@@ -446,8 +446,8 @@ export class EngineWindowImpl implements EngineWindow {
     this.window.commit(geometry);
   }
 
-  public visible(act: string, desk: number): boolean {
-    return this.window.visible(act, desk);
+  public visible(surfaces: DriverSurface[]): boolean {
+    return this.window.visible(surfaces);
   }
 
   public visibleOn(srf: DriverSurface): boolean {

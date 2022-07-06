@@ -193,7 +193,7 @@ export interface Controller {
     window?: EngineWindow | null
   ): DriverSurface | null;
 
-  swapGroupToSurface(groupId: number, screen: number): void;
+  summonGroupToSurface(group: string, surface: DriverSurface): void;
 
   /**
    * The function is called when the script is destroyed.
@@ -244,14 +244,15 @@ export class ControllerImpl implements Controller {
 
     // show OSD notification on each monitor
     for (const surf of this.screens()) {
-      const layout = this.engine.layouts.getCurrentLayout(surf);
-      this.showNotification(
-        layout.name,
-        layout.icon,
-        layout.hint,
-        `Group ${surf.group}`,
-        surf.screen
-      );
+      this.engine.showLayoutNotification(surf);
+      // const layout = this.engine.layouts.getCurrentLayout(surf);
+      // this.showNotification(
+      //   layout.name,
+      //   layout.icon,
+      //   layout.hint,
+      //   surf.groups.length ? `Groups ${surf.groups}` : "",
+      //   surf.screen
+      // );
     }
   }
 
@@ -348,14 +349,15 @@ export class ControllerImpl implements Controller {
     // }
 
     for (const surf of this.screens()) {
-      const layout = this.engine.layouts.getCurrentLayout(surf);
-      this.showNotification(
-        layout.name,
-        layout.icon,
-        layout.hint,
-        `Group ${surf.group}`,
-        surf.screen
-      );
+      this.engine.showLayoutNotification(surf);
+      // const layout = this.engine.layouts.getCurrentLayout(surf);
+      // this.showNotification(
+      //   layout.name,
+      //   layout.icon,
+      //   layout.hint,
+      //   surf.groups.length ? `Groups ${surf.groups}` : "",
+      //   surf.screen
+      // );
 
       // tell kwin if any windows need to be moved to this desktop
       for (const win of this.engine.windows.allWindowsOn(surf)) {
@@ -567,9 +569,9 @@ export class ControllerImpl implements Controller {
     window: EngineWindow,
     oldSurface: DriverSurface | null
   ): void {
-    if (!window.surface) {
-      return;
-    }
+    // if (!window.surface) {
+    //   return;
+    // }
     // this.moveWindowToSurface(window, window.surface);
 
     // const oldSurface = this.driver.moveWindowToGroup(surface.group, window);
@@ -632,11 +634,11 @@ export class ControllerImpl implements Controller {
     // this.engine.arrange(oldSurface);
     // this.engine.arrange(newSurf);
 
-    const toGroup = this.screens(this.currentActivity, window.desktop)[
+    const toSurface = this.screens(this.currentActivity, window.desktop)[
       window.screen
-    ].group;
-    this.log.log(`moving window to group ${toGroup}`);
-    this.engine.moveWindowToGroup(toGroup, window);
+    ];
+    this.log.log(`moving window to surface ${toSurface}`);
+    this.engine.moveWindowToSurface(window, toSurface);
   }
 
   public onWindowMinimized(window: EngineWindow): void {
@@ -766,7 +768,6 @@ export class ControllerImpl implements Controller {
     // this.engine.arrange();
     // this.engine.moveWindowToSurface(window, surface);
     // this.driver.moveWindowToGroup(window, surface);
-
     // const oldSurface = this.driver.moveWindowToGroup(surface.group, window);
     // if (oldSurface) {
     //   this.engine.arrange(oldSurface);
@@ -790,12 +791,16 @@ export class ControllerImpl implements Controller {
     return this.driver.moveWindowToGroup(groupId, window);
   }
 
-  public swapGroupToSurface(groupId: number, screen: number): void {
-    const toSurface = this.screens()[screen];
-    const swapOutGroup = toSurface.group;
+  public summonGroupToSurface(group: string, toSurface: DriverSurface): void {
+    if (toSurface.groups.includes(group)) {
+      this.showNotification(`Group ${group} already shown`);
+      return;
+    }
+
+    // const swapOutGroup = toSurface.group;
 
     // hide windows currently on this surface
-    const windowsLeavingSurface = this.engine.windows.allWindowsOn(toSurface);
+    // const windowsLeavingSurface = this.engine.windows.allWindowsOn(toSurface);
     // for (const win of this.engine.windows.allWindowsOn(toSurface)) {
     //   if (win.window.desktop != -1) {
     //     win.window.hidden = true;
@@ -804,34 +809,43 @@ export class ControllerImpl implements Controller {
 
     // find if a surface is already showing this group and needs to be swapped
     let fromSurface: DriverSurface | null = null;
-    for (const surf of this.screens()) {
+    for (const surf of this.screens(toSurface.activity, toSurface.desktop)) {
       // don't swap with self
-      if (surf.screen == screen) {
+      if (surf.screen == toSurface.screen) {
         continue;
       }
-      if (this.screens()[surf.screen].group == groupId) {
+      if (surf.groups.includes(group)) {
         fromSurface = surf;
         break;
+      } else {
+        // this.log.log(`${surf.groups} has not ${group}`);
       }
-    }
-
-    if (fromSurface) {
-      this.log.log(
-        `swapping screen ${screen} group ${swapOutGroup} with screen ${fromSurface.screen} group ${groupId}`
-      );
-      toSurface.group = -1;
-
-      this.swapGroupToSurface(swapOutGroup, fromSurface.screen);
     }
 
     // otherwise just map the group to the surface
 
-    this.log.log(`swapGroupToSurface(): set ${screen} to group ${groupId}`);
-    toSurface.group = groupId;
+    this.log.log(
+      `summonGroupToSurface(): adding group ${group} to surface ${toSurface}`
+    );
+    const newGroupList = toSurface.groups;
+    this.log.log(`adding to existing ${newGroupList.length} groups`);
+    newGroupList.push(group);
+    toSurface.groups = newGroupList;
+    this.engine.arrange(toSurface);
 
-    // unhide windows now on this surface
-    for (const win of this.engine.windows.allWindowsOn(toSurface)) {
-      win.window.surface = toSurface;
+    // // unhide windows now on this surface
+    // for (const win of this.engine.windows.allWindowsOn(toSurface)) {
+    //   win.window.surface = toSurface;
+    // }
+
+    if (fromSurface) {
+      this.log.log(
+        `summonGroupToSurface(): swapping group ${group} from screen ${fromSurface.screen} to screen ${toSurface.screen}`
+      );
+      fromSurface.groups = fromSurface.groups.filter((g) => g != group);
+
+      // this.swapGroupToSurface(swapOutGroup, fromSurface.screen);
+      this.engine.arrange(fromSurface);
     }
   }
 

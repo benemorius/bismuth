@@ -23,13 +23,13 @@ export interface WindowStore {
    */
   visibleTiledWindowsOn(surf: DriverSurface): EngineWindow[];
 
-  visibleTiledWindowsIn(group: number): EngineWindow[];
-  tiledWindowsIn(group: number): EngineWindow[];
+  // visibleTiledWindowsIn(group: number): EngineWindow[];
+  // tiledWindowsIn(group: number): EngineWindow[];
 
   /**
    * Return all visible "Tile" windows on the given activity and desktop.
    */
-  visibleTiledWindows(activity: string, desktop: number): EngineWindow[];
+  visibleTiledWindows(surfaces: DriverSurface[]): EngineWindow[];
 
   /**
    * Return all visible "tileable" windows on the given surface
@@ -47,7 +47,7 @@ export interface WindowStore {
    */
   allWindowsOn(surf: DriverSurface): EngineWindow[];
 
-  allWindows(activity: string, desktop: number): EngineWindow[];
+  allWindows(surfaces: DriverSurface[]): EngineWindow[];
   // allWindowsIn(groupId: number);
 
   /**
@@ -165,7 +165,7 @@ export class WindowStoreImpl implements WindowStore {
   }
 
   public isInMasterStack(window: EngineWindow, stackSize: number): boolean {
-    const windowStack = this.tiledWindowsIn(window.window.group).filter(
+    const windowStack = this.visibleTileableWindowsOn(window.surface).filter(
       (win) => !win.minimized || win == window
     );
     // this.log.log(`checking ${window.window.group}`);
@@ -186,12 +186,12 @@ export class WindowStoreImpl implements WindowStore {
     return this.list.filter((win) => win.tiled && win.visibleOn(surf));
   }
 
-  public visibleTiledWindowsIn(group: number): EngineWindow[] {
-    return this.list.filter((win) => win.tileable && win.window.group == group);
-  }
+  // public visibleTiledWindowsIn(group: number): EngineWindow[] {
+  //   return this.list.filter((win) => win.tileable && win.window.group == group);
+  // }
 
-  public visibleTiledWindows(act: string, desk: number): EngineWindow[] {
-    return this.list.filter((win) => win.tiled && win.visible(act, desk));
+  public visibleTiledWindows(surfaces: DriverSurface[]): EngineWindow[] {
+    return this.list.filter((win) => win.tiled && win.visible(surfaces));
   }
 
   public visibleTileableWindowsOn(surf: DriverSurface): EngineWindow[] {
@@ -204,17 +204,17 @@ export class WindowStoreImpl implements WindowStore {
     );
   }
 
-  public tiledWindowsIn(group: number): EngineWindow[] {
-    return this.list.filter(
-      (win) => (win.tileable || win.minimized) && win.window.group == group
-    );
-  }
+  // public tiledWindowsIn(group: number): EngineWindow[] {
+  //   return this.list.filter(
+  //     (win) => (win.tileable || win.minimized) && win.window.group == group
+  //   );
+  // }
 
   public allWindowsOn(surf: DriverSurface): EngineWindow[] {
     return this.list.filter((win) => win.window.on(surf));
   }
 
-  public allWindows(act: string, desk: number): EngineWindow[] {
-    return this.list.filter((win) => win.visible(act, desk));
+  public allWindows(surfaces: DriverSurface[]): EngineWindow[] {
+    return this.list.filter((win) => win.visible(surfaces));
   }
 }

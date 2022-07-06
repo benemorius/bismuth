@@ -34,8 +34,8 @@ public:
     Q_INVOKABLE QString getWindowList();
     Q_INVOKABLE void putWindowList(const QString);
 
-    Q_INVOKABLE int getSurfaceGroup(int desktop, int screen);
-    Q_INVOKABLE void setSurfaceGroup(int desktop, int screen, int groupID);
+    Q_INVOKABLE QVector<QString> getSurfaceGroups(int desktop, int screen);
+    Q_INVOKABLE void setSurfaceGroups(int desktop, int screen, QVector<QString> groups);
 
     /**
      * Returns the workspace instance

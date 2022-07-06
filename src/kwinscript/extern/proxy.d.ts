@@ -16,6 +16,6 @@ export interface TSProxy {
   // layoutState(stateId: string): LayoutState;
   getWindowList(): string;
   putWindowList(list: string): void;
-  getSurfaceGroup(desktop: number, screen: number): number;
-  setSurfaceGroup(desktop: number, screen: number, groupID: number): void;
+  getSurfaceGroups(desktop: number, screen: number): string[];
+  setSurfaceGroups(desktop: number, screen: number, groups: string[]): void;
 }

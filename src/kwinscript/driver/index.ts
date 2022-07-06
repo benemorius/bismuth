@@ -81,9 +81,9 @@ export interface Driver {
     window?: EngineWindow
   ): DriverSurface | null;
 
-  swapGroupToSurface(groupId: number, screen: number): void;
+  // swapGroupToSurface(groupId: number, screen: number): void;
 
-  onWindowDesktopChanged(window: DriverWindow, desktop: number): void;
+  // onWindowDesktopChanged(window: DriverWindow, desktop: number): void;
 
   /**
    * Destroy all callbacks and other non-GC resources
@@ -255,23 +255,23 @@ export class DriverImpl implements Driver {
   public bindEvents(): void {
     const onClientAdded = (client: KWin.Client): void => {
       this.log.log(
-        `Client added to desktop ${client.desktop} screen ${client.screen}: ${client}`
+        `Client spawned on desktop ${client.desktop} screen ${client.screen}: ${client}`
       );
 
       const currentDesktop = this.proxy.workspace().currentDesktop;
-      const group = this.controller.currentSurface.group;
+      // const group = this.controller.currentSurface.group;
 
-      this.log.log(
-        `initially setting client 0x${client.windowId.toString(
-          16
-        )} to group ${group}`
-      );
+      // this.log.log(
+      //   `initially setting client 0x${client.windowId.toString(
+      //     16
+      //   )} to group ${group}`
+      // );
 
       // this.groupMap[client.windowId] = group;
       const window = this.windowMap.add(client);
 
       // this is a new window; don't use whatever group was stored in the cache
-      window.window.group = group;
+      // window.window.group = group;
 
       // in case a naughty program tried to open on another desktop, force it here
       if (!window.shouldIgnore) {
@@ -282,9 +282,9 @@ export class DriverImpl implements Driver {
 
       if (window.state === WindowState.Unmanaged) {
         this.log.log(
-          `Window becomes unmanaged and gets removed :( The client was ${client}`
+          `Window becomes unmanaged and gets removed :( The client was ${window}`
         );
-        window.window.group = 0;
+        window.window.group = undefined;
         this.windowMap.remove(client);
         // delete this.groupMap[client.windowId];
       } else {
@@ -410,31 +410,31 @@ export class DriverImpl implements Driver {
    * @param client window client object specified by KWin
    */
   private manageWindow(client: KWin.Client): EngineWindow | null {
-    const desktop = this.proxy.workspace().currentDesktop;
+    // const desktop = this.proxy.workspace().currentDesktop;
     // const group = this.controller.currentSurface.group;
     this.log.log(
       `find screen ${client.screen} of ${this.controller.screens().length}`
     );
     //FIXME I've seen this crash on restart if kwin is slow to populate the screens
-    const group = this.controller.screens()[client.screen]?.group;
+    // const group = this.controller.screens()[client.screen]?.group;
 
-    this.log.log(
-      `initially setting client ${client.windowId} to group ${group}`
-    );
+    // this.log.log(
+    //   `initially setting client ${client.windowId} to group ${group}`
+    // );
 
     // Add window to our window map
     const window = this.windowMap.add(client);
 
     if (window.shouldIgnore) {
-      window.window.group = 0;
+      // window.window.group = 0;
       this.windowMap.remove(client);
       return null;
     }
 
     // windows that don't have a group stored in the cache go to the active group
-    if (!window.window.group) {
-      window.window.group = group;
-    }
+    // if (!window.window.group) {
+    //   window.window.group = group;
+    // }
 
     // // move windows that load on the hidden desktop to the current desktop
     // if (window.desktop == this.kwinApi.workspace.desktops) {
@@ -487,7 +487,7 @@ export class DriverImpl implements Driver {
     return null;
   }
 
-  public swapGroupToSurface(groupId: number, screen: number): void {}
+  // public swapGroupToSurface(groupId: number, screen: number): void {}
 
   public showNotification(
     text: string,
@@ -515,9 +515,9 @@ export class DriverImpl implements Driver {
     }
   }
 
-  public onWindowDesktopChanged(window: DriverWindow, desktop: number): void {
+  // public onWindowDesktopChanged(window: DriverWindow, desktop: number): void {
 
-  }
+  // }
 
   public onCurrentDesktopChanged(): void {
     // const desktop = this.currentDesktop;
