@@ -786,7 +786,7 @@ export class ControllerImpl implements Controller {
       layout.name,
       layout.icon,
       layout.hint,
-      `Summoned Group ${group}`
+      `Summon Group ${group}`
     );
   }
 
@@ -827,9 +827,21 @@ export class ControllerImpl implements Controller {
         .filter((win) => win.window.group == group).length
     ) {
       this.log.log(
-        `removeGroupFromSurface(): can't orphan group ${group} on ${fromSurf}`
+        `removeGroupFromSurface(): can't orphan non-empty group ${group} on ${fromSurf}`
       );
-      this.showNotification(`Can't orphan group ${group}`);
+      this.log.log(
+        `contains ${
+          this.engine.windows
+            .allWindowsOn(fromSurf)
+            .filter((win) => win.window.group == group).length
+        } grouped windows`
+      );
+      this.showNotification(
+        `Can't orphan non-empty`,
+        undefined,
+        undefined,
+        `Group ${group}`
+      );
       return;
     } else if (!toSurf) {
       fromSurf.groups = fromSurf.groups.filter((g) => g != group);

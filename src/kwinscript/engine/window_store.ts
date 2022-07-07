@@ -162,10 +162,10 @@ export class WindowStoreImpl implements WindowStore {
   }
 
   public isInMasterStack(window: EngineWindow, stackSize: number): boolean {
-    const windowStack = this.visibleTileableWindowsOn(window.surface).filter(
-      (win) => !win.minimized || win == window
+    const windowStack = this.allWindowsOn(window.surface).filter(
+      (win) => win.tileable || win == window
     );
-    // this.log.log(`checking ${window.window.group}`);
+    // this.log.log(`checking ${windowStack.length} of ${stackSize}`);
     const foundIndex = windowStack.indexOf(window);
     // this.log.log(`found at ${foundIndex}`);
     return 0 <= foundIndex && foundIndex < stackSize;
@@ -192,9 +192,7 @@ export class WindowStoreImpl implements WindowStore {
   }
 
   public tileableWindowsOn(surf: DriverSurface): EngineWindow[] {
-    return this.list.filter(
-      (win) => win.tileable && win.surface?.id === surf.id
-    );
+    return this.allWindowsOn(surf).filter((win) => win.tileable);
   }
 
   public allWindowsOn(surf: DriverSurface): EngineWindow[] {

@@ -207,126 +207,126 @@ void Controller::registerShortcuts()
         qDebug(Bi) << "Rotate Sublayout Clockwise Triggered!";
     });
 
-    addShortcut("swap_group_1_surface", "Swap Group 1 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 1 to Active Monitor Triggered!";
+    addShortcut("swap_group_1_surface", "Toggle Group 1 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 1 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_2_surface", "Swap Group 2 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 2 to Active Monitor Triggered!";
+    addShortcut("swap_group_2_surface", "Toggle Group 2 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 2 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_3_surface", "Swap Group 3 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 3 to Active Monitor Triggered!";
+    addShortcut("swap_group_3_surface", "Toggle Group 3 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 3 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_4_surface", "Swap Group 4 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 4 to Active Monitor Triggered!";
+    addShortcut("swap_group_4_surface", "Toggle Group 4 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 4 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_5_surface", "Swap Group 5 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 5 to Active Monitor Triggered!";
+    addShortcut("swap_group_5_surface", "Toggle Group 5 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 5 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_6_surface", "Swap Group 6 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 6 to Active Monitor Triggered!";
+    addShortcut("swap_group_6_surface", "Toggle Group 6 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 6 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_7_surface", "Swap Group 7 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 7 to Active Monitor Triggered!";
+    addShortcut("swap_group_7_surface", "Toggle Group 7 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 7 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_8_surface", "Swap Group 8 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 8 to Active Monitor Triggered!";
+    addShortcut("swap_group_8_surface", "Toggle Group 8 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 8 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_9_surface", "Swap Group 9 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 9 to Active Monitor Triggered!";
+    addShortcut("swap_group_9_surface", "Toggle Group 9 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 9 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_10_surface", "Swap Group 10 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 10 to Active Monitor Triggered!";
+    addShortcut("swap_group_10_surface", "Toggle Group 10 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 10 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_11_surface", "Swap Group 11 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 11 to Active Monitor Triggered!";
+    addShortcut("swap_group_11_surface", "Toggle Group 11 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 11 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_12_surface", "Swap Group 12 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 12 to Active Monitor Triggered!";
+    addShortcut("swap_group_12_surface", "Toggle Group 12 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 12 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_13_surface", "Swap Group 13 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 13 to Active Monitor Triggered!";
+    addShortcut("swap_group_13_surface", "Toggle Group 13 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 13 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_14_surface", "Swap Group 14 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 14 to Active Monitor Triggered!";
+    addShortcut("swap_group_14_surface", "Toggle Group 14 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 14 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_15_surface", "Swap Group 15 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 15 to Active Monitor Triggered!";
+    addShortcut("swap_group_15_surface", "Toggle Group 15 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 15 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_16_surface", "Swap Group 16 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 16 to Active Monitor Triggered!";
+    addShortcut("swap_group_16_surface", "Toggle Group 16 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 16 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_17_surface", "Swap Group 17 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 17 to Active Monitor Triggered!";
+    addShortcut("swap_group_17_surface", "Toggle Group 17 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 17 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_18_surface", "Swap Group 18 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 18 to Active Monitor Triggered!";
+    addShortcut("swap_group_18_surface", "Toggle Group 18 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 18 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_19_surface", "Swap Group 19 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 19 to Active Monitor Triggered!";
+    addShortcut("swap_group_19_surface", "Toggle Group 19 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 19 on Active Monitor Triggered!";
     });
-    addShortcut("swap_group_20_surface", "Swap Group 20 to Active Monitor", "", [=]() {
-        qDebug(Bi) << "Swap Group 20 to Active Monitor Triggered!";
+    addShortcut("swap_group_20_surface", "Toggle Group 20 on Active Monitor", "", [=]() {
+        qDebug(Bi) << "Toggle Group 20 on Active Monitor Triggered!";
     });
 
-    addShortcut("change_window_group_1", "Send Active Window to Group 1", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 1 Triggered!";
+    addShortcut("change_window_group_1", "Un/Join Active Window to Group 1", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 1 Triggered!";
     });
-    addShortcut("change_window_group_2", "Send Active Window to Group 2", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 2 Triggered!";
+    addShortcut("change_window_group_2", "Un/Join Active Window to Group 2", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 2 Triggered!";
     });
-    addShortcut("change_window_group_3", "Send Active Window to Group 3", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 3 Triggered!";
+    addShortcut("change_window_group_3", "Un/Join Active Window to Group 3", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 3 Triggered!";
     });
-    addShortcut("change_window_group_4", "Send Active Window to Group 4", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 4 Triggered!";
+    addShortcut("change_window_group_4", "Un/Join Active Window to Group 4", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 4 Triggered!";
     });
-    addShortcut("change_window_group_5", "Send Active Window to Group 5", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 5 Triggered!";
+    addShortcut("change_window_group_5", "Un/Join Active Window to Group 5", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 5 Triggered!";
     });
-    addShortcut("change_window_group_6", "Send Active Window to Group 6", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 6 Triggered!";
+    addShortcut("change_window_group_6", "Un/Join Active Window to Group 6", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 6 Triggered!";
     });
-    addShortcut("change_window_group_7", "Send Active Window to Group 7", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 7 Triggered!";
+    addShortcut("change_window_group_7", "Un/Join Active Window to Group 7", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 7 Triggered!";
     });
-    addShortcut("change_window_group_8", "Send Active Window to Group 8", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 8 Triggered!";
+    addShortcut("change_window_group_8", "Un/Join Active Window to Group 8", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 8 Triggered!";
     });
-    addShortcut("change_window_group_9", "Send Active Window to Group 9", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 9 Triggered!";
+    addShortcut("change_window_group_9", "Un/Join Active Window to Group 9", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 9 Triggered!";
     });
-    addShortcut("change_window_group_10", "Send Active Window to Group 10", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 10 Triggered!";
+    addShortcut("change_window_group_10", "Un/Join Active Window to Group 10", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 10 Triggered!";
     });
-    addShortcut("change_window_group_11", "Send Active Window to Group 11", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 11 Triggered!";
+    addShortcut("change_window_group_11", "Un/Join Active Window to Group 11", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 11 Triggered!";
     });
-    addShortcut("change_window_group_12", "Send Active Window to Group 12", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 12 Triggered!";
+    addShortcut("change_window_group_12", "Un/Join Active Window to Group 12", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 12 Triggered!";
     });
-    addShortcut("change_window_group_13", "Send Active Window to Group 13", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 13 Triggered!";
+    addShortcut("change_window_group_13", "Un/Join Active Window to Group 13", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 13 Triggered!";
     });
-    addShortcut("change_window_group_14", "Send Active Window to Group 14", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 14 Triggered!";
+    addShortcut("change_window_group_14", "Un/Join Active Window to Group 14", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 14 Triggered!";
     });
-    addShortcut("change_window_group_15", "Send Active Window to Group 15", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 15 Triggered!";
+    addShortcut("change_window_group_15", "Un/Join Active Window to Group 15", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 15 Triggered!";
     });
-    addShortcut("change_window_group_16", "Send Active Window to Group 16", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 16 Triggered!";
+    addShortcut("change_window_group_16", "Un/Join Active Window to Group 16", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 16 Triggered!";
     });
-    addShortcut("change_window_group_17", "Send Active Window to Group 17", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 17 Triggered!";
+    addShortcut("change_window_group_17", "Un/Join Active Window to Group 17", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 17 Triggered!";
     });
-    addShortcut("change_window_group_18", "Send Active Window to Group 18", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 18 Triggered!";
+    addShortcut("change_window_group_18", "Un/Join Active Window to Group 18", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 18 Triggered!";
     });
-    addShortcut("change_window_group_19", "Send Active Window to Group 19", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 19 Triggered!";
+    addShortcut("change_window_group_19", "Un/Join Active Window to Group 19", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 19 Triggered!";
     });
-    addShortcut("change_window_group_20", "Send Active Window to Group 20", "", [=]() {
-        qDebug(Bi) << "Send Active Window to Group 20 Triggered!";
+    addShortcut("change_window_group_20", "Un/Join Active Window to Group 20", "", [=]() {
+        qDebug(Bi) << "Un/Join Active Window to Group 20 Triggered!";
     });
 }
 
