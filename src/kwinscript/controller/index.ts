@@ -781,13 +781,33 @@ export class ControllerImpl implements Controller {
       this.engine.arrange(fromSurface);
     }
 
-    const layout = this.engine.currentLayoutOnCurrentSurface();
-    this.showNotification(
-      layout.name,
-      layout.icon,
-      layout.hint,
-      `Summon Group ${group}`
-    );
+    if (
+      this.engine.windows
+        .allWindowsOn(toSurface)
+        .filter((win) => win.window.group == group).length
+    ) {
+      this.showNotification(
+        `Group ${group}`,
+        undefined,
+        `${
+          this.engine.windows
+            .allWindowsOn(toSurface)
+            .filter((win) => win.window.group == group).length
+        }`,
+        `Summon Group to Monitor`
+      );
+    } else {
+      this.showNotification(
+        `Group ${group}`,
+        undefined,
+        `${
+          this.engine.windows
+            .allWindowsOn(toSurface)
+            .filter((win) => win.window.group == group).length
+        }`,
+        `Create New Empty Group`
+      );
+    }
   }
 
   public removeGroupFromSurface(group: string, fromSurf: DriverSurface): void {
@@ -837,15 +857,25 @@ export class ControllerImpl implements Controller {
         } grouped windows`
       );
       this.showNotification(
-        `Can't orphan non-empty`,
+        `Group ${group}`,
         undefined,
-        undefined,
-        `Group ${group}`
+        `${
+          this.engine.windows
+            .allWindowsOn(fromSurf)
+            .filter((win) => win.window.group == group).length
+        }`,
+        `Can't orphan non-empty group`
       );
       return;
     } else if (!toSurf) {
       fromSurf.groups = fromSurf.groups.filter((g) => g != group);
-      this.showNotification(`Disband Group ${group}`);
+      this.engine.arrange(fromSurf);
+      this.showNotification(
+        `Group ${group}`,
+        undefined,
+        `0`,
+        `Empty Group Disbanded`
+      );
       return;
     }
 
@@ -853,12 +883,15 @@ export class ControllerImpl implements Controller {
     this.engine.arrange(toSurf);
     this.engine.arrange(fromSurf);
 
-    const layout = this.engine.currentLayoutOnCurrentSurface();
     this.showNotification(
-      layout.name,
-      layout.icon,
-      layout.hint,
-      `Dismiss Group ${group}`
+      `Group ${group}`,
+      undefined,
+      `${
+        this.engine.windows
+          .allWindowsOn(toSurf)
+          .filter((win) => win.window.group == group).length
+      }`,
+      `Dismiss Group from Monitor`
     );
   }
 

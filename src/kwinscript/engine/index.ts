@@ -197,7 +197,12 @@ export interface Engine {
    * @param icon an optional name of the icon to display in the pop-up.
    * @param hint an optional string displayed beside the main text.
    */
-  showNotification(text: string, icon?: string, hint?: string): void;
+  showNotification(
+    text: string,
+    icon?: string,
+    hint?: string,
+    subtext?: string
+  ): void;
 
   /**
    * Show the notification with the info
@@ -1223,7 +1228,6 @@ export class EngineImpl implements Engine {
       return;
     }
 
-    this.log.log(`compare ${window.window.group} ${group}`);
     if (window.window.group == group) {
       this.removeWindowFromGroup(group, window);
       return;
@@ -1255,10 +1259,28 @@ export class EngineImpl implements Engine {
         window.surface = toSurf;
         this.arrange(toSurf);
         this.arrange(fromSurf);
-        this.showNotification(`Send Window to Group ${group}`);
+        this.showNotification(
+          `Group ${group}`,
+          undefined,
+          `${
+            this.windows
+              .allWindowsOn(toSurf)
+              .filter((win) => win.window.group == group).length
+          }`,
+          `Send Window to Group`
+        );
       } else {
         this.log.log(`showing window on same surface ${toSurf}`);
-        this.showNotification(`Add Window to Group ${group}`);
+        this.showNotification(
+          `Group ${group}`,
+          undefined,
+          `${
+            this.windows
+              .allWindowsOn(fromSurf)
+              .filter((win) => win.window.group == group).length
+          }`,
+          `Join Window to Group`
+        );
       }
       return;
     }
@@ -1288,7 +1310,16 @@ export class EngineImpl implements Engine {
       window.surface = toSurf;
       this.arrange(toSurf);
       this.arrange(fromSurf);
-      this.showNotification(`Send Window to Group ${group}`);
+      this.showNotification(
+        `Group ${group}`,
+        undefined,
+        `${
+          this.windows
+            .allWindowsOn(toSurf)
+            .filter((win) => win.window.group == group).length
+        }`,
+        `Send Window to Group`
+      );
       return;
     }
 
@@ -1297,7 +1328,17 @@ export class EngineImpl implements Engine {
     const newGroupList = toSurf.groups;
     newGroupList.push(group);
     toSurf.groups = newGroupList;
-    this.showNotification(`Add Window to New Group ${group}`);
+    this.arrange(toSurf);
+    this.showNotification(
+      `Group ${group}`,
+      undefined,
+      `${
+        this.windows
+          .allWindowsOn(toSurf)
+          .filter((win) => win.window.group == group).length
+      }`,
+      `Add Window to New Group`
+    );
   }
 
   public removeWindowFromGroup(group: string, window?: EngineWindow): void {
@@ -1312,8 +1353,18 @@ export class EngineImpl implements Engine {
       return;
     }
 
-    this.showNotification(`Remove Window from Group ${group}`);
     window.window.group = undefined;
+
+    this.showNotification(
+      `Group ${group}`,
+      undefined,
+      `${
+        this.windows
+          .allWindowsOn(window.surface)
+          .filter((win) => win.window.group == group).length
+      }`,
+      `Unjoin Window from Group`
+    );
   }
 
   public summonGroupToSurface(group: string, surface: DriverSurface): void {
@@ -1380,8 +1431,13 @@ export class EngineImpl implements Engine {
     return this.proxy.workspace().desktops;
   }
 
-  public showNotification(text: string, icon?: string, hint?: string): void {
-    this.controller.showNotification(text, icon, hint);
+  public showNotification(
+    text: string,
+    icon?: string,
+    hint?: string,
+    subtext?: string
+  ): void {
+    this.controller.showNotification(text, icon, hint, subtext);
   }
 
   public showLayoutNotification(surface?: DriverSurface): void {
