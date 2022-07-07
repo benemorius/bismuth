@@ -47,7 +47,7 @@ export class DriverSurfaceImpl implements DriverSurface {
   public readonly id: string;
   public readonly ignore: boolean;
   public workingArea: Rect;
-  private _groups: string[] | null;
+  private _groupCache: string[] | null;
 
   constructor(
     private _screen: number,
@@ -59,9 +59,7 @@ export class DriverSurfaceImpl implements DriverSurface {
     private log: Log
   ) {
     this.id = this.generateId();
-    this._groups = null;
-
-    // this.log.log(`surface made with ${_group}`);
+    this._groupCache = null;
 
     const activityName = activityInfo.activityName(activity);
     this.ignore =
@@ -103,21 +101,17 @@ export class DriverSurfaceImpl implements DriverSurface {
   }
 
   public get groups(): string[] {
-    if (this._groups != null) {
-      return this._groups;
+    // cache is null before the first read from disk
+    if (this._groupCache != null) {
+      return this._groupCache;
     }
 
     const groupList = this.proxy.getSurfaceGroups(this.desktop, this.screen);
     this.log.log(
       `TSProxy.getSurfaceGroups: desktop:screen ${this.desktop}:${this.screen} groups ${groupList}`
     );
-    // if (!g) {
-    //   const customScreenOrder = [4, 1, 3, 2, 5, 6, 7, 8, 9];
-    //   g = (this.desktop - 1) * 5 + customScreenOrder[this.screen];
-    //   this.log.log(`initialize ${this.desktop}:${this.screen} to group ${g}`);
-    //   this.group = g;
-    // }
-    this._groups = groupList;
+
+    this._groupCache = groupList;
     return groupList;
   }
 
@@ -125,9 +119,8 @@ export class DriverSurfaceImpl implements DriverSurface {
     this.log.log(
       `TSProxy.setSurfaceGroups: desktop:screen ${this.desktop}:${this.screen} groups ${groupList}`
     );
-    this.log.log(`setting ${groupList.length} groups`);
     this.proxy.setSurfaceGroups(this.desktop, this.screen, groupList);
-    this._groups = groupList;
+    this._groupCache = groupList;
   }
 
   public toString(): string {

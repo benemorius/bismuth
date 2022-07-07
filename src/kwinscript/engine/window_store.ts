@@ -23,9 +23,6 @@ export interface WindowStore {
    */
   visibleTiledWindowsOn(surf: DriverSurface): EngineWindow[];
 
-  // visibleTiledWindowsIn(group: number): EngineWindow[];
-  // tiledWindowsIn(group: number): EngineWindow[];
-
   /**
    * Return all visible "Tile" windows on the given activity and desktop.
    */
@@ -186,10 +183,6 @@ export class WindowStoreImpl implements WindowStore {
     return this.list.filter((win) => win.tiled && win.visibleOn(surf));
   }
 
-  // public visibleTiledWindowsIn(group: number): EngineWindow[] {
-  //   return this.list.filter((win) => win.tileable && win.window.group == group);
-  // }
-
   public visibleTiledWindows(surfaces: DriverSurface[]): EngineWindow[] {
     return this.list.filter((win) => win.tiled && win.visible(surfaces));
   }
@@ -203,12 +196,6 @@ export class WindowStoreImpl implements WindowStore {
       (win) => win.tileable && win.surface?.id === surf.id
     );
   }
-
-  // public tiledWindowsIn(group: number): EngineWindow[] {
-  //   return this.list.filter(
-  //     (win) => (win.tileable || win.minimized) && win.window.group == group
-  //   );
-  // }
 
   public allWindowsOn(surf: DriverSurface): EngineWindow[] {
     return this.list.filter((win) => win.window.on(surf));

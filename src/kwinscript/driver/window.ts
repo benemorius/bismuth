@@ -76,8 +76,6 @@ export interface DriverWindow {
 
   group: string | undefined;
 
-  hidden: boolean;
-
   unmanaged: boolean;
 
   onDesktopChanged(): boolean;
@@ -127,9 +125,8 @@ export class DriverWindowImpl implements DriverWindow {
   public readonly id: string;
   private _desktop: number;
   private _screen: number;
-  private _group: string | undefined;
-  private _hidden: boolean;
-  private _hiding: boolean;
+  // null before first cache read; undefined when window isn't grouped
+  private _groupCache: string | undefined | null;
   public unmanaged: boolean;
   private _changingDesktop: boolean;
   private _changingScreen: boolean;
@@ -293,45 +290,32 @@ export class DriverWindowImpl implements DriverWindow {
     // TODO: setting activity?
 
     if (!surf) {
-      // this.hidden = true;
       return;
     }
 
-    this.log.log(
-      `DriverWindow.surface(): desktop: ${surf.desktop} screen: ${surf.screen} groups: ${surf.groups} ${this}`
-    );
-
-    // if (this.hidden) {
-    //   this.hidden = false;
-    // }
-
-    // if (surf.desktop != -1) {
-    //   this.desktop = surf.desktop;
-    // }
+    this.log.log(`DriverWindow.surface(): ${surf} ${this}`);
 
     this._screen = surf.screen;
     this._desktop = surf.desktop;
-
-    // this.group = surf.group;
   }
 
   private noBorderManaged: boolean;
   private noBorderOriginal: boolean;
 
   public get group(): string | undefined {
-    if (this._group != null) {
-      return this._group;
+    if (this._groupCache != null) {
+      return this._groupCache;
     }
 
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
-    this._group = state.group != "" ? state.group : undefined;
-    return this._group;
+    this._groupCache = state.group != "" ? state.group : undefined;
+    return this._groupCache;
   }
 
   public set group(groupName: string | undefined) {
-    this._group = groupName;
+    this._groupCache = groupName;
 
     this.log.log(`TSProxy.getWindowState(): ${this}`);
     const state = JSON.parse(
@@ -347,23 +331,6 @@ export class DriverWindowImpl implements DriverWindow {
       this.client.windowId.toString(),
       JSON.stringify(state)
     );
-  }
-
-  public get hidden(): boolean {
-    return this._hidden;
-  }
-
-  public set hidden(hide: boolean) {
-    this.log.log(`set window hidden ${hide} ${this}`);
-    this._hidden = hide;
-
-    // if (hide && this.client.desktop != this.proxy.workspace().desktops) {
-    //   this._desktop = this.client.desktop;
-    //   this.desktop = this.proxy.workspace().desktops;
-    //   this._hiding = true;
-    // } else if (this.client.desktop == this.proxy.workspace().desktops) {
-    //   this.client.desktop = this._desktop;
-    // }
   }
 
   /**
@@ -387,17 +354,11 @@ export class DriverWindowImpl implements DriverWindow {
     this.noBorderOriginal = client.noBorder;
     this._desktop = client.desktop;
     this._screen = client.screen;
-    this._group = undefined;
-    this._hidden = false;
-    this._hiding = false;
+    this._groupCache = null;
     this.unmanaged = false;
     this._changingDesktop = false;
     this._changingScreen = false;
     this._changingGeometry = false;
-
-    if (!this.shouldIgnore) {
-      this._hidden = false;
-    }
   }
 
   public static generateID(client: KWin.Client): string {
@@ -426,7 +387,6 @@ export class DriverWindowImpl implements DriverWindow {
 
     if (!this.surface) {
       this.log.log(`tried to commit window with no surface ${this}`);
-      // this.hidden = true;
       return;
     }
 
@@ -440,16 +400,6 @@ export class DriverWindowImpl implements DriverWindow {
       geometry = undefined;
     }
 
-    // if (this.surface.group != this.group) {
-    //   this.log.log(`is hidden ${this}`);
-    //   this.hidden = true;
-    //   return;
-    // }
-
-    // if (this.hidden) {
-    //   this.hidden = false;
-    // }
-
     if (this.client.resize) {
       return;
     }
@@ -457,10 +407,6 @@ export class DriverWindowImpl implements DriverWindow {
     if (this.client.move) {
       // return;
     }
-
-    // if (!this.screen) {
-    //   return;
-    // }
 
     if (noBorder !== undefined) {
       if (!this.noBorderManaged && noBorder) {
