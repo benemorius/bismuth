@@ -582,6 +582,7 @@ export class EngineImpl implements Engine {
         ) {
           this.log.log(`restoring window position for: ${window}`);
 
+          this.log.log(`TSProxy.getWindowState(): ${window}`);
           const w = JSON.parse(
             this.proxy.getWindowState(
               (window.window as DriverWindowImpl).client.windowId.toString()

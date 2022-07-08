@@ -47,7 +47,7 @@ export class DriverSurfaceImpl implements DriverSurface {
   public readonly id: string;
   public readonly ignore: boolean;
   public workingArea: Rect;
-  private _groupCache: string[] | null;
+  private static _groupCache: { [id: string]: string[] | null } = {};
 
   constructor(
     private _screen: number,
@@ -59,7 +59,6 @@ export class DriverSurfaceImpl implements DriverSurface {
     private log: Log
   ) {
     this.id = this.generateId();
-    this._groupCache = null;
 
     const activityName = activityInfo.activityName(activity);
     this.ignore =
@@ -102,8 +101,9 @@ export class DriverSurfaceImpl implements DriverSurface {
 
   public get groups(): string[] {
     // cache is null before the first read from disk
-    if (this._groupCache != null) {
-      return this._groupCache;
+    const cachedEntry = DriverSurfaceImpl._groupCache[this.id];
+    if (cachedEntry != null) {
+      return cachedEntry;
     }
 
     const groupList = this.proxy.getSurfaceGroups(this.desktop, this.screen);
@@ -111,7 +111,7 @@ export class DriverSurfaceImpl implements DriverSurface {
       `TSProxy.getSurfaceGroups: desktop:screen ${this.desktop}:${this.screen} groups ${groupList}`
     );
 
-    this._groupCache = groupList;
+    DriverSurfaceImpl._groupCache[this.id] = groupList;
     return groupList;
   }
 
@@ -120,7 +120,7 @@ export class DriverSurfaceImpl implements DriverSurface {
       `TSProxy.setSurfaceGroups: desktop:screen ${this.desktop}:${this.screen} groups ${groupList}`
     );
     this.proxy.setSurfaceGroups(this.desktop, this.screen, groupList);
-    this._groupCache = groupList;
+    DriverSurfaceImpl._groupCache[this.id] = groupList;
   }
 
   public toString(): string {

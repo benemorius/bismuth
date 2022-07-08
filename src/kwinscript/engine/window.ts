@@ -305,6 +305,7 @@ export class EngineWindowImpl implements EngineWindow {
 
     this.internalState = value;
 
+    this.log.log(`TSProxy.getWindowState(): ${this}`);
     const saveState = JSON.parse(
       this.proxy.getWindowState(
         (this.window as DriverWindowImpl).client.windowId.toString()
@@ -313,6 +314,7 @@ export class EngineWindowImpl implements EngineWindow {
 
     saveState.state = value;
 
+    this.log.log(`TSProxy.putWindowState(): ${this}`);
     this.proxy.putWindowState(
       (this.window as DriverWindowImpl).client.windowId.toString(),
       JSON.stringify(saveState)

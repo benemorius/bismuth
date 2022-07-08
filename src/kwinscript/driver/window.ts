@@ -303,10 +303,11 @@ export class DriverWindowImpl implements DriverWindow {
   private noBorderOriginal: boolean;
 
   public get group(): string | undefined {
-    if (this._groupCache != null) {
+    if (this._groupCache !== null) {
       return this._groupCache;
     }
 
+    this.log.log(`TSProxy.getWindowState(): ${this}`);
     const state = JSON.parse(
       this.proxy.getWindowState(this.client.windowId.toString())
     ) as WindowConfig;
